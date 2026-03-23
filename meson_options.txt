@@ -1,0 +1,2 @@
+option('tests', type : 'feature', value : 'auto',
+  description : 'Build gst-check unit tests')

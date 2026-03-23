@@ -1,0 +1,34 @@
+# Author: Mouhsine Kassimi Farhaoui
+# Mail: mouhsine98@gmail.com
+
+PROJECT_NAME           = "gstklvplugin"
+PROJECT_BRIEF          = "GStreamer KLV plugin with MISB ST 0601.8 support"
+OUTPUT_DIRECTORY       = doc/doxygen
+
+OPTIMIZE_OUTPUT_FOR_C  = YES
+JAVADOC_AUTOBRIEF      = YES
+MARKDOWN_SUPPORT       = YES
+
+INPUT                  = include src doc tests examples tools scripts packaging
+FILE_PATTERNS          = *.h *.c *.cpp *.py *.sh *.md
+EXTENSION_MAPPING      = sh=Python
+RECURSIVE              = YES
+
+USE_MDFILE_AS_MAINPAGE = doc/doxygen_main.md
+
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+EXTRACT_LOCAL_METHODS  = YES
+
+IMAGE_PATH             = doc/assets
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+
+HAVE_DOT               = YES
+DOT_IMAGE_FORMAT       = svg
+INTERACTIVE_SVG        = YES
+
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = YES
+WARN_NO_PARAMDOC       = YES

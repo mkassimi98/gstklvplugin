@@ -1,0 +1,45 @@
+# Author: Mouhsine Kassimi Farhaoui
+# Mail: mouhsine98@gmail.com
+
+# Build artifacts
+/build/
+/build-cmake/
+/builddir/
+/packaging/out/
+doc/doxygen/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.so
+*.o
+
+# Test files
+*.json
+*.klv
+*.ts
+# test_*.py
+# test_*.sh
+demo.sh
+msg_*.json
+decoded_*.json
+input.*
+output.*
+/tmp/
+examples/**/*.tmp
+
+# IDE
+/.claude/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+Testing/
