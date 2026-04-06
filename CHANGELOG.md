@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - C++ examples for TS roundtrip, SRT sender/receiver, and UDP sender/receiver.
 - Bash workflow helpers for development shells, full validation, installation, and strict Doxygen generation.
 - Debian-style packaging support via `packaging/deb/build_deb.sh`, including staged installs and `.deb` generation for Debian-family x86 and ARM systems such as Raspberry Pi OS.
-- Installed project documentation, Doxygen coverage across code and support scripts, and MIT licensing metadata.
+- Installed project documentation, Doxygen coverage across code and support scripts, and licensing metadata.
 
 ### Changed
 
@@ -43,7 +43,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-_(No unreleased changes.)_
+### Changed
+
+- Project license changed from MIT to GNU AGPL-3.0.
 
 ---
 

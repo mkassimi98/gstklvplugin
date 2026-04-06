@@ -86,7 +86,7 @@ def main() -> int:
             "Plugin Details:" not in plugin_out
             or "4 features" not in plugin_out
             or "klvmetaenc" not in plugin_out
-            or "MIT" not in plugin_out
+            or "AGPL-3.0" not in plugin_out
         ):
             raise SystemExit("gst-inspect did not report the expected staged plugin details")
 

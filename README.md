@@ -10,7 +10,7 @@
 [![Build](https://img.shields.io/badge/build-meson%20%7C%20cmake-lightgrey)](meson.build)
 [![Tests](https://img.shields.io/badge/tests-gst--check-green)](tests/)
 [![Project Status](https://img.shields.io/badge/status-stable-brightgreen)](CHANGELOG.md)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 
 A GStreamer 1.x plugin suite for end-to-end KLV metadata workflows. Implements **SMPTE ST 336** (KLV encoding), **MISB ST 0601.8** (UAS Datalink Local Set, 93 tags), **STANAG 4609** transport conventions, and **MISB ST 1402** MPEG-TS metadata signaling. Written in C11 for compatibility with the GStreamer plugin ecosystem.
 
@@ -472,7 +472,7 @@ Tag registry locations:
 
 | File | Description |
 |---|---|
-| `LICENSE` | MIT |
+| `LICENSE` | GNU AGPL-3.0 |
 | `AUTHORS` | Maintainers and contributors |
 | `CHANGELOG.md` | Release history |
 | `CONTRIBUTING.md` | Contribution guide |

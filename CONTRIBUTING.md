@@ -205,6 +205,6 @@ doxygen Doxyfile
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the **MIT License**.
+By contributing, you agree that your contributions are licensed under the **GNU AGPL-3.0 License**.
 
 See [LICENSE](LICENSE) for the full license text.
