@@ -46,6 +46,6 @@ GST_PLUGIN_DEFINE(GST_VERSION_MAJOR,
                   "KLV Plugin for SMPTE ST 336 and MISB ST 0601 Metadata",
                   plugin_init,
                   PACKAGE_VERSION,
-                  "MIT",
+                  "AGPL-3.0",
                   "gstklvplugin",
                   "https://github.com/mkassimi98/gstklvplugin")
