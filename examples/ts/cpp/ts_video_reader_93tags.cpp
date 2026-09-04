@@ -167,12 +167,8 @@ struct ReaderState
 
 static const guint8 kKlvUl[16] = {
   0x06, 0x0E, 0x2B, 0x34, 0x02, 0x0B, 0x01, 0x01, 0x0E, 0x01, 0x03, 0x01, 0x01, 0x00, 0x00, 0x00};
-static const guint8 kKlvUlAlt[16] = {
-  0x06, 0x0E, 0x2B, 0x34, 0x02, 0x0B, 0x01, 0x01, 0x0E, 0x01, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00};
 static const guint8 kKlvUlSuffix[11] = {
   0x0B, 0x01, 0x01, 0x0E, 0x01, 0x03, 0x01, 0x01, 0x00, 0x00, 0x00};
-static const guint8 kKlvUlSuffixAlt[11] = {
-  0x0B, 0x01, 0x01, 0x0E, 0x01, 0x03, 0x01, 0x00, 0x00, 0x00, 0x00};
 
 struct PesPayload
 {
@@ -424,13 +420,6 @@ normalize_klv_payload(const std::vector<guint8> &payload)
     fixed.insert(fixed.end(), payload.begin(), payload.end());
     return fixed;
   }
-  if (payload.size() >= sizeof(kKlvUlSuffixAlt) &&
-      std::memcmp(payload.data(), kKlvUlSuffixAlt, sizeof(kKlvUlSuffixAlt)) == 0) {
-    std::vector<guint8> fixed;
-    fixed.insert(fixed.end(), std::begin(kKlvUl), std::begin(kKlvUl) + 5);
-    fixed.insert(fixed.end(), payload.begin(), payload.end());
-    return fixed;
-  }
   return payload;
 }
 
@@ -611,11 +600,6 @@ on_klv_raw_handoff(GstElement *, GstBuffer *buffer, GstPad *, gpointer user_data
     chunk.insert(chunk.end(), kKlvUl, kKlvUl + 5);
     chunk.insert(chunk.end(), data, data + size);
   }
-  else if (size >= sizeof(kKlvUlSuffixAlt) &&
-           std::memcmp(data, kKlvUlSuffixAlt, sizeof(kKlvUlSuffixAlt)) == 0) {
-    chunk.insert(chunk.end(), kKlvUl, kKlvUl + 5);
-    chunk.insert(chunk.end(), data, data + size);
-  }
   else {
     chunk.insert(chunk.end(), data, data + size);
   }
@@ -634,9 +618,6 @@ on_klv_raw_handoff(GstElement *, GstBuffer *buffer, GstPad *, gpointer user_data
     auto it = std::search(buf.begin(), buf.end(), std::begin(kKlvUl), std::end(kKlvUl));
     if (it != buf.end())
       return static_cast<size_t>(std::distance(buf.begin(), it));
-    auto it_alt = std::search(buf.begin(), buf.end(), std::begin(kKlvUlAlt), std::end(kKlvUlAlt));
-    if (it_alt != buf.end())
-      return static_cast<size_t>(std::distance(buf.begin(), it_alt));
     return std::string::npos;
   };
 

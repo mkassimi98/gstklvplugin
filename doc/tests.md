@@ -87,8 +87,8 @@ Meson sets the important environment automatically:
 
 | Suite | Focus |
 |---|---|
-| `elements/test_klvmetaenc` | Factory creation, pads, MISB UL, checksum TLV, round-trip of large integers and raw byte tags |
-| `elements/test_klvmetadec` | Factory creation, pads, encode/decode round-trip, JSON recovery for raw tags, `PTS`/`DTS` preservation |
+| `elements/test_klvmetaenc` | Factory creation, pads, full 16-byte MISB UL, checksum TLV, round-trip of large integers and raw byte tags |
+| `elements/test_klvmetadec` | Factory creation, pads, strict MISB UL validation, encode/decode round-trip, JSON recovery for raw tags, `PTS`/`DTS` preservation |
 | `elements/test_klvframeinject` | Factory creation, pads, default properties, video passthrough, per-frame KLV generation, fallback-to-properties behaviour |
 | `elements/test_tspmtrewrite` | Factory creation, pads, default properties, PMT rewrite to `0x06 + KLVA`, metadata descriptor serialization |
 

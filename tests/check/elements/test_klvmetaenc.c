@@ -102,13 +102,28 @@ GST_START_TEST(test_klvmetaenc_ul_header)
   GstBuffer *out = gst_harness_pull(h);
   fail_unless(out != NULL, "no output buffer");
 
-  /* Check MISB ST 0601 UL: 06 0E 2B 34 02 0B 01 01 0E 01 03 01 00 00 00 00 */
+  const guint8 expected_ul[16] = {
+    0x06,
+    0x0E,
+    0x2B,
+    0x34,
+    0x02,
+    0x0B,
+    0x01,
+    0x01,
+    0x0E,
+    0x01,
+    0x03,
+    0x01,
+    0x01,
+    0x00,
+    0x00,
+    0x00,
+  };
   GstMapInfo map;
-  gst_buffer_map(out, &map, GST_MAP_READ);
-  fail_unless(map.size >= 16, "output too short");
-  fail_unless(map.data[0] == 0x06 && map.data[1] == 0x0E && map.data[2] == 0x2B &&
-                map.data[3] == 0x34,
-              "MISB ST 0601 UL prefix incorrect");
+  fail_unless(gst_buffer_map(out, &map, GST_MAP_READ));
+  fail_unless(map.size >= sizeof(expected_ul), "output too short");
+  fail_unless(memcmp(map.data, expected_ul, sizeof(expected_ul)) == 0, "MISB ST 0601 UL incorrect");
   gst_buffer_unmap(out, &map);
 
   gst_buffer_unref(out);
