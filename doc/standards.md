@@ -61,7 +61,7 @@ Every KLV packet emitted by this plugin has the following layout:
 ```mermaid
 flowchart TB
     subgraph PKT["KLV Packet"]
-        A["Universal Label (16 bytes)<br/>06 0E 2B 34 02 0B 01 01<br/>0E 01 03 01 00 00 00 00"]
+        A["Universal Label (16 bytes)<br/>06 0E 2B 34 02 0B 01 01<br/>0E 01 03 01 01 00 00 00"]
         B["BER Length (1-4 bytes)<br/>Short form: 1 byte<br/>Long form: 0x82 / 0x83 + bytes"]
         subgraph C["Local Set TLV entries"]
             D["Tag (1 byte)<br/>Length (BER, 1-4 bytes)<br/>Value (Length bytes)"]

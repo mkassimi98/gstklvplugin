@@ -308,7 +308,7 @@ gst_element_register(plugin, "tspmtrewrite",  GST_RANK_NONE, GST_TYPE_TS_PMT_REW
 
 | Constant | Value |
 |---|---|
-| `KLV_MISB_ST0601_UL` | `06 0E 2B 34 02 0B 01 01 0E 01 03 01 00 00 00 00` |
+| `KLV_MISB_ST0601_UL` | `06 0E 2B 34 02 0B 01 01 0E 01 03 01 01 00 00 00` |
 
 ---
 

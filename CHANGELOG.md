@@ -47,6 +47,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - Project license changed from MIT to GNU AGPL-3.0.
 
+### Fixed
+
+- Corrected the MISB ST 0601.8 UAS Local Set Universal Key and added full 16-byte conformance coverage ([#2](https://github.com/mkassimi98/gstklvplugin/issues/2)).
+
 ---
 
 [1.0.0]: https://github.com/mkassimi98/gstklvplugin/releases/tag/v1.0.0
