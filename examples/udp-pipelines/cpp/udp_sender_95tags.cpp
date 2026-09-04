@@ -1,18 +1,17 @@
 /**
- * @file examples/srt-pipelines/cpp/srt_sender_93tags.cpp
- * @brief C++ SRT sender that streams H.264 with MISB ST 0601.8 KLV tags.
+ * @file examples/udp-pipelines/cpp/udp_sender_95tags.cpp
+ * @brief C++ UDP sender that streams H.264 with MISB ST 0601.8 KLV tags.
  *
  * @ingroup gstklv_examples_cpp
- * @brief Reference implementations for the C++ demo pipelines.
  *
  * @details
  * This example generates a complete MISB ST 0601.8 tag set, injects it
- * as KLV metadata, and streams the result via SRT. Tags are loaded from
- * `data/stanag4609_tags.ini`. Numeric tags are generated within their
+ * as KLV metadata, and streams the result via UDP/MPEG-TS. Tags are loaded
+ * from `data/stanag4609_tags.ini`. Numeric tags are generated within their
  * declared ranges, string tags get a `DEMO-<tag>` placeholder, and byte
  * tags emit deterministic `hex:` payloads.
  *
- * @section gstklv_sender_pipeline Pipeline Topology
+ * @section gstklv_udp_sender_pipeline Pipeline Topology
  * The sender pipeline is built as a single GStreamer launch string:
  *
  * @dot
@@ -20,18 +19,11 @@
  *   rankdir=LR;
  *   node [shape=box, style="rounded,filled", fillcolor="#f2f2f2"];
  *   videotestsrc -> videoconvert -> capsfilter -> x264enc -> h264parse -> klvframeinject;
- *   klvframeinject -> queue_video -> mpegtsmux -> tspmtrewrite -> srtsink;
+ *   klvframeinject -> queue_video -> mpegtsmux -> tspmtrewrite -> udpsink;
  *   klvframeinject -> queue_klv -> klv_caps -> mpegtsmux;
  *   klv_caps [label="meta/x-klv\nstream-type=21"];
  * }
  * @enddot
- *
- * @section gstklv_sender_flow Execution Flow
- * 1. Load tag definitions from the INI registry.
- * 2. Build the GStreamer pipeline and locate key elements.
- * 3. On a periodic timer, generate a new JSON payload with tag values.
- * 4. Push JSON to `klvframeinject` via the `tags-json` property.
- * 5. Print a formatted tag dump for each frame.
  *
  * @note `tspmtrewrite` is configured to emit tsdemux-friendly KLVA metadata
  * signaling in the PMT while preserving STANAG 4609 interoperability.
@@ -58,20 +50,7 @@ namespace
 
 struct Options
 {
-  /**
-   * @brief Command line configuration for the sender.
-   *
-   * @par Important options
-   * - `host`: Bind address for SRT listener.
-   * - `port`: UDP/SRT port.
-   * - `fps`: Video framerate.
-   * - `bitrate_kbps`: H.264 target bitrate.
-   * - `count`: Frame count (0 = run forever).
-   * - `tags_ini`: Path to the tag registry.
-   * - `plugin_path`: GST_PLUGIN_PATH override (where gstklvplugin lives).
-   * - `seed`: Deterministic RNG seed for repeatable tag values.
-   */
-  std::string host = "0.0.0.0";
+  std::string host = "127.0.0.1";
   int port = 5000;
   int fps = 2;
   int bitrate_kbps = 2000;
@@ -174,12 +153,6 @@ json_escape(const std::string &in)
 
 struct TagGenerator
 {
-  /**
-   * @brief Stateful generator that produces plausible dynamic values.
-   *
-   * Values are seeded with random offsets and then updated over time
-   * to produce smooth trajectories for location, attitude, and velocity.
-   */
   std::mt19937 rng;
   double lat = 40.7128;
   double lon = -74.0060;
@@ -243,12 +216,10 @@ struct TagGenerator
   double
   value_for_tag(int tag_id, const KLVTagDef *td)
   {
-    if (tag_id == 2) {
+    if (tag_id == 2)
       return static_cast<double>(g_get_real_time());
-    }
-    if (tag_id == 72) {
+    if (tag_id == 72)
       return static_cast<double>(event_start_us);
-    }
     if (tag_id == 13)
       return lat;
     if (tag_id == 14)
@@ -271,18 +242,15 @@ struct TagGenerator
       return north_vel;
     if (tag_id == 80)
       return east_vel;
-    if (tag_id == 81)
-      return up_vel;
-    if (tag_id == 82)
-      return north_vel * 1.05;
-    if (tag_id == 83)
-      return east_vel * 1.05;
-    if (tag_id == 84)
-      return up_vel * 1.05;
+    /* Tags 82-89 (Corner Lat/Lon Point 1-4, Full) and 90-93 (Platform
+     * Pitch/Roll/Angle-of-Attack/Sideslip, Full) fall through to the
+     * generic registry-driven random_in_range() below, which already
+     * respects each tag's declared engineering range. Tag 81 (Image
+     * Horizon Pixel Pack) is a "bytes" type and is handled separately
+     * before this function is ever called. */
 
-    if (td && td->has_range) {
+    if (td && td->has_range)
       return random_in_range(td->range_min, td->range_max);
-    }
     return random_in_range(0.0, 1.0);
   }
 };
@@ -294,22 +262,17 @@ sorted_tag_ids(GHashTable *defs)
   GHashTableIter iter;
   gpointer key = nullptr;
   g_hash_table_iter_init(&iter, defs);
-  while (g_hash_table_iter_next(&iter, &key, nullptr)) {
+  while (g_hash_table_iter_next(&iter, &key, nullptr))
     ids.push_back(GPOINTER_TO_INT(key));
-  }
   std::sort(ids.begin(), ids.end());
   return ids;
 }
 
 struct GeneratedTag
 {
-  /// Tag identifier (MISB tag id).
   int tag_id = 0;
-  /// True when the tag is carried as raw bytes or string.
   bool is_raw = false;
-  /// Raw string payload (hex or string).
   std::string raw;
-  /// Numeric value for numeric tags.
   double value = 0.0;
 };
 
@@ -324,7 +287,7 @@ build_tags_json(GHashTable *defs,
   bool first = true;
   int count = 0;
   for (int tag_id : sorted_tag_ids(defs)) {
-    if (tag_id <= 0 || tag_id > 93 || tag_id == 1)
+    if (tag_id <= 0 || tag_id > 95 || tag_id == 1)
       continue;
     KLVTagDef *td = (KLVTagDef *)g_hash_table_lookup(defs, GINT_TO_POINTER(tag_id));
     if (!td || !td->type)
@@ -425,7 +388,7 @@ print_frame_tags(int frame, int tag_count, const std::vector<GeneratedTag> &tags
 }
 
 gboolean
-on_bus_message(GstBus *bus, GstMessage *msg, gpointer user_data)
+on_bus_message(GstBus *, GstMessage *msg, gpointer user_data)
 {
   GMainLoop *loop = static_cast<GMainLoop *>(user_data);
   switch (GST_MESSAGE_TYPE(msg)) {
@@ -449,7 +412,6 @@ on_bus_message(GstBus *bus, GstMessage *msg, gpointer user_data)
 
 struct SenderState
 {
-  /// Pipeline and elements used by the periodic timer.
   GstElement *pipeline = nullptr;
   GstElement *inject = nullptr;
   GMainLoop *loop = nullptr;
@@ -488,12 +450,6 @@ on_tick(gpointer user_data)
 int
 main(int argc, char **argv)
 {
-  /**
-   * @brief Entry point for the C++ SRT sender.
-   *
-   * Initializes GStreamer, loads tag definitions, builds the pipeline,
-   * and starts a periodic timer to push new KLV payloads.
-   */
   Options opt;
   gchar *host_opt = nullptr;
   gchar *tags_ini_opt = nullptr;
@@ -506,8 +462,14 @@ main(int argc, char **argv)
   gchar *metadata_flags_str = nullptr;
 
   GOptionEntry entries[] = {
-    {"host", 0, 0, G_OPTION_ARG_STRING, &host_opt, (gchar *)"Bind host", (gchar *)"0.0.0.0"},
-    {"port", 0, 0, G_OPTION_ARG_INT, &opt.port, (gchar *)"Bind port", (gchar *)"5000"},
+    {"host",
+     0,
+     0,
+     G_OPTION_ARG_STRING,
+     &host_opt,
+     (gchar *)"Destination host",
+     (gchar *)"127.0.0.1"},
+    {"port", 0, 0, G_OPTION_ARG_INT, &opt.port, (gchar *)"Destination port", (gchar *)"5000"},
     {"fps", 0, 0, G_OPTION_ARG_INT, &opt.fps, (gchar *)"Frames per second", (gchar *)"2"},
     {"bitrate",
      0,
@@ -582,7 +544,7 @@ main(int argc, char **argv)
      (gchar *)"0x00"},
     {nullptr}};
 
-  GOptionContext *ctx = g_option_context_new(" - C++ SRT sender with MISB ST 0601.8 tags");
+  GOptionContext *ctx = g_option_context_new(" - C++ UDP sender with MISB ST 0601.8 tags");
   g_option_context_add_main_entries(ctx, entries, nullptr);
   g_option_context_set_ignore_unknown_options(ctx, TRUE);
 
@@ -677,10 +639,10 @@ main(int argc, char **argv)
   }
 
   std::cout << "\n" << std::string(100, '=') << "\n";
-  std::cout << "SRT SENDER (C++) - MISB ST 0601.8 KLV TAGS\n";
+  std::cout << "UDP SENDER (C++) - MISB ST 0601.8 KLV TAGS\n";
   std::cout << std::string(100, '=') << "\n\n";
   std::cout << "> Configuration:\n";
-  std::cout << "  Host (bind): " << opt.host << "\n";
+  std::cout << "  Destination Host: " << opt.host << "\n";
   std::cout << "  Port: " << opt.port << "\n";
   std::cout << "  Framerate: " << opt.fps << " fps\n";
   std::cout << "  Bitrate: " << opt.bitrate_kbps << " kbps\n";
@@ -689,7 +651,7 @@ main(int argc, char **argv)
   std::cout << "  mpegtsmux custom mappings: "
             << (supports_custom_mappings ? "enabled" : "disabled (not supported by this GST)")
             << "\n";
-  std::cout << "  SRT: listener on " << opt.host << ":" << opt.port << "\n\n";
+  std::cout << "  UDP: " << opt.host << ":" << opt.port << "\n\n";
 
   const int gop = std::max(2, opt.fps * 2);
   std::ostringstream pipeline_str;
@@ -697,11 +659,11 @@ main(int argc, char **argv)
                << "video/x-raw,width=640,height=480,framerate=" << opt.fps << "/1 ! "
                << "x264enc name=enc bitrate=" << opt.bitrate_kbps
                << " speed-preset=ultrafast tune=zerolatency ! " << "h264parse name=vparse ! "
+               << "video/x-h264,stream-format=byte-stream,alignment=au ! "
                << "klvframeinject name=inject " << "inject.video_src ! queue ! mpegtsmux name=mux"
                << (supports_custom_mappings ? " enable-custom-mappings=true" : "") << " ! "
-               << "tspmtrewrite name=pmtrw ! " << "srtsink mode=listener localaddress=" << opt.host
-               << " localport=" << opt.port << " "
-               << "latency=125 wait-for-connection=false sync=false async=false "
+               << "tspmtrewrite name=pmtrw ! " << "udpsink host=" << opt.host
+               << " port=" << opt.port << " sync=false async=false "
                << "inject.klv_src ! queue ! "
                   "meta/x-klv,parsed=true,stream-format=klv,stream-type=(int)21 ! mux.";
 
@@ -713,6 +675,7 @@ main(int argc, char **argv)
     if (pipeline)
       gst_object_unref(pipeline);
     g_hash_table_destroy(defs);
+    free_meta_strings();
     return 1;
   }
 
@@ -735,29 +698,25 @@ main(int argc, char **argv)
       gst_object_unref(vparse);
     gst_object_unref(pipeline);
     g_hash_table_destroy(defs);
+    free_meta_strings();
     return 1;
   }
 
-  if (has_property(mux, "alignment")) {
+  if (has_property(mux, "alignment"))
     g_object_set(mux, "alignment", 7, nullptr);
-  }
-  if (has_property(enc, "key-int-max")) {
+  if (has_property(enc, "key-int-max"))
     g_object_set(enc, "key-int-max", gop, nullptr);
-  }
-  if (has_property(enc, "bframes")) {
+  if (has_property(enc, "bframes"))
     g_object_set(enc, "bframes", 0u, nullptr);
-  }
   if (has_property(enc, "option-string")) {
     std::ostringstream enc_opts;
     enc_opts << "keyint=" << gop << ":min-keyint=" << gop << ":scenecut=0:repeat-headers=1:aud=1";
     g_object_set(enc, "option-string", enc_opts.str().c_str(), nullptr);
   }
-  if (has_property(enc, "aud")) {
+  if (has_property(enc, "aud"))
     g_object_set(enc, "aud", TRUE, nullptr);
-  }
-  if (has_property(vparse, "config-interval")) {
+  if (has_property(vparse, "config-interval"))
     g_object_set(vparse, "config-interval", -1, nullptr);
-  }
 
   g_object_set(pmtrw,
                "metadata-app-format",

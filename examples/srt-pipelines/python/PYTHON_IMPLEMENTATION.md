@@ -46,7 +46,7 @@ The shell scripts are kept for quick smoke tests, but the Python scripts are the
 ## Related Docs
 
 - `doc/srt_pipelines.md`
-- `doc/93_tags.md`
+- `doc/95_tags.md`
 - `README.md`
 
 Author: Mouhsine Kassimi Farhaoui  

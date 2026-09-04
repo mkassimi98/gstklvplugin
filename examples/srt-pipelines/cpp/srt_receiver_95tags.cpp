@@ -1,5 +1,5 @@
 /**
- * @file examples/srt-pipelines/cpp/srt_receiver_93tags.cpp
+ * @file examples/srt-pipelines/cpp/srt_receiver_95tags.cpp
  * @brief C++ SRT receiver that decodes MISB ST 0601.8 KLV tags.
  *
  * @ingroup gstklv_examples_cpp

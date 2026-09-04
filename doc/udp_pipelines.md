@@ -11,14 +11,14 @@ End-to-end MPEG-TS streaming of H.264 video with MISB ST 0601.8 KLV metadata ove
 Receiver first:
 
 ```bash
-python3 examples/udp-pipelines/python/udp_receiver_93tags.py \
+python3 examples/udp-pipelines/python/udp_receiver_95tags.py \
   --host 0.0.0.0 --port 5000
 ```
 
 Then sender:
 
 ```bash
-python3 examples/udp-pipelines/python/udp_sender_93tags.py \
+python3 examples/udp-pipelines/python/udp_sender_95tags.py \
   --host 127.0.0.1 --port 5000 --count 50
 ```
 

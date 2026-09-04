@@ -31,14 +31,14 @@ export GST_PLUGIN_PATH="$PWD/build/src:$GST_PLUGIN_PATH"
 Receiver first:
 
 ```bash
-python3 examples/srt-pipelines/python/srt_receiver_93tags.py \
+python3 examples/srt-pipelines/python/srt_receiver_95tags.py \
   --host 127.0.0.1 --port 5000
 ```
 
 Then sender:
 
 ```bash
-python3 examples/srt-pipelines/python/srt_sender_93tags.py \
+python3 examples/srt-pipelines/python/srt_sender_95tags.py \
   --host 0.0.0.0 --port 5000 --count 50
 ```
 
@@ -184,7 +184,7 @@ Expected indicators:
 
 ## Related Documentation
 
-- [doc/93_tags.md](93_tags.md) — Full 93-tag ST 0601.8 workflow and local set options
+- [doc/95_tags.md](95_tags.md) — Full ST 0601.8 tags 1-95 workflow and local set options
 - [doc/udp_pipelines.md](udp_pipelines.md) — Equivalent workflows over UDP
 - [doc/compliance_appendix.md](compliance_appendix.md) — PMT descriptor bytes
 - [doc/examples.md](examples.md) — All example workflows including TS and UDP

@@ -18,7 +18,7 @@ shared_library('gstklvplugin',
   plugin_sources,
   c_args : [
     '-DPACKAGE="gstklvplugin"',
-    '-DPACKAGE_VERSION="1.0.1"',
+    '-DPACKAGE_VERSION="1.0.2"',
     '-DKLV_TAGS_DEFAULT_PATH="' + (get_option('prefix') / datadir / 'gstklvplugin' / 'stanag4609_tags.ini') + '"',
   ],
   include_directories : include_directories('../include'),

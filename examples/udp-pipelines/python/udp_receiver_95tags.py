@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-@file examples/srt-pipelines/python/srt_receiver_93tags.py
-@brief Python SRT receiver example for MISB ST 0601.8 KLV metadata.
+@file examples/udp-pipelines/python/udp_receiver_95tags.py
+@brief Python UDP receiver example for MISB ST 0601.8 KLV metadata.
 @ingroup gstklv_examples_python
 
-This example receives an MPEG-TS stream over SRT, displays the decoded video,
+This example receives an MPEG-TS stream over UDP, displays the decoded video,
 and prints MISB ST 0601.8 metadata after decoding the KLV branch.
 
 Author: Mouhsine Kassimi Farhaoui
@@ -61,9 +61,9 @@ def load_tag_defs(ini_path):
 
 
 def build_pipeline(host, port, headless):
-    pipeline = Gst.Pipeline.new("srt-receiver")
+    pipeline = Gst.Pipeline.new("udp-receiver")
 
-    srtsrc = Gst.ElementFactory.make("srtsrc", "src")
+    udpsrc = Gst.ElementFactory.make("udpsrc", "src")
     demux = Gst.ElementFactory.make("tsdemux", "demux")
     queue_video = Gst.ElementFactory.make("queue", "queue_video")
     h264parse = None
@@ -86,12 +86,12 @@ def build_pipeline(host, port, headless):
     klvmetadec = Gst.ElementFactory.make("klvmetadec", "klvmetadec")
     klvsink = Gst.ElementFactory.make("fakesink", "klvsink")
 
-    elements = [srtsrc, demux, queue_video, videosink, queue_klv, klvmetadec, klvsink]
+    elements = [udpsrc, demux, queue_video, videosink, queue_klv, klvmetadec, klvsink]
     if not headless:
         elements.extend([h264parse, decoder, videoconvert])
     if not all(elements):
         missing = [name for name, elem in [
-            ("srtsrc", srtsrc),
+            ("udpsrc", udpsrc),
             ("tsdemux", demux),
             ("queue", queue_video),
             ("videosink", videosink),
@@ -105,19 +105,19 @@ def build_pipeline(host, port, headless):
         print(f"ERROR Missing GStreamer elements: {', '.join(missing)}")
         return None, None, None
 
-    srtsrc.set_property("uri", f"srt://{host}:{port}")
-    srtsrc.set_property("mode", "caller")
-    # Read one live SRT payload per buffer. For MPEG-TS this matches the common
-    # 7-packet payload size (7 * 188 = 1316 bytes).
-    srtsrc.set_property("blocksize", 1316)
-    srtsrc.set_property("latency", 125)
+    udpsrc.set_property("address", host)
+    udpsrc.set_property("port", port)
+    udpsrc.set_property(
+        "caps",
+        Gst.Caps.from_string("video/mpegts, systemstream=(boolean)true, packetsize=(int)188"),
+    )
     # Keep video and KLV on the same presentation timeline. Dropping only video
     # buffers makes terminal prints drift away from the displayed frame.
     if not headless and videosink.find_property("async") is not None:
         videosink.set_property("async", False)
     videosink.set_property("sync", True)
 
-    pipeline.add(srtsrc)
+    pipeline.add(udpsrc)
     pipeline.add(demux)
     pipeline.add(queue_video)
     pipeline.add(videosink)
@@ -129,7 +129,7 @@ def build_pipeline(host, port, headless):
         pipeline.add(decoder)
         pipeline.add(videoconvert)
 
-    srtsrc.link(demux)
+    udpsrc.link(demux)
     if headless:
         queue_video.link(videosink)
     else:
@@ -194,7 +194,7 @@ def run_receiver(host="127.0.0.1", port=5000, output="-", headless=False, print_
     tag_defs = load_tag_defs(ini_path)
 
     print("\n" + "=" * 100)
-    print("SRT RECEIVER - MISB ST 0601.8 KLV TAGS")
+    print("UDP RECEIVER - MISB ST 0601.8 KLV TAGS")
     print("=" * 100 + "\n")
     print("> Configuration:")
     print(f"  Host: {host}")
@@ -346,7 +346,7 @@ def run_receiver(host="127.0.0.1", port=5000, output="-", headless=False, print_
                 if debug:
                     print(f"  Video debug: {debug}")
                 return
-            # After video is disabled, srtsrc may post a cascading "streaming
+            # After video is disabled, udpsrc may post a cascading "streaming
             # stopped" flow error because in-flight buffers hit the now-idle
             # video branch. Suppress it — the KLV branch is still running.
             if video_disabled["value"] and src_name == "src":
@@ -362,7 +362,7 @@ def run_receiver(host="127.0.0.1", port=5000, output="-", headless=False, print_
 
     bus.connect("message", on_message)
 
-    print(f"> Connecting to srt://{host}:{port} (mode=caller)...")
+    print(f"> Listening on udp://{host}:{port} ...")
     print("  Press Ctrl+C to stop\n")
 
     ret = pipeline.set_state(Gst.State.PLAYING)
@@ -387,10 +387,10 @@ def run_receiver(host="127.0.0.1", port=5000, output="-", headless=False, print_
 
 def main():
     parser = argparse.ArgumentParser(
-        description="SRT Receiver with MISB ST 0601.8 KLV tags"
+        description="UDP Receiver with MISB ST 0601.8 KLV tags"
     )
-    parser.add_argument("--host", default="127.0.0.1", help="SRT host (default: 127.0.0.1)")
-    parser.add_argument("--port", type=int, default=5000, help="SRT port (default: 5000)")
+    parser.add_argument("--host", default="0.0.0.0", help="Listen host (default: 0.0.0.0)")
+    parser.add_argument("--port", type=int, default=5000, help="UDP port (default: 5000)")
     parser.add_argument("--output", default="-", help="Output file ('-' = stdout)")
     parser.add_argument("--headless", action="store_true", help="Disable video output")
     parser.add_argument("--print-all", action="store_true", help="Print all tags each frame (default)")

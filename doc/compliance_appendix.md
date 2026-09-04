@@ -77,7 +77,7 @@ Breakdown:
 
 ```bash
 export GST_PLUGIN_PATH="$PWD/build/src:$GST_PLUGIN_PATH"
-python3 examples/srt-pipelines/python/srt_sender_93tags.py \
+python3 examples/srt-pipelines/python/srt_sender_95tags.py \
   --host 0.0.0.0 --port 5000 --count 0
 ```
 
@@ -113,7 +113,7 @@ KLV metadata streams:
 To verify with non-default values, pass `--metadata-*` options to the sender:
 
 ```bash
-python3 examples/srt-pipelines/python/srt_sender_93tags.py \
+python3 examples/srt-pipelines/python/srt_sender_95tags.py \
   --host 0.0.0.0 --port 5000 \
   --metadata-app-format 0xFFFF \
   --metadata-app-identifier MISB \

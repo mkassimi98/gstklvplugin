@@ -398,7 +398,7 @@ create_klv_buffer(GstKlvFrameInjectPrivate *priv, GstClockTime pts, GstClockTime
                         ? (KLVTagDef *)g_hash_table_lookup(priv->tag_defs, GINT_TO_POINTER(tag_id))
                         : NULL;
 
-      if (tag_id <= 0 || tag_id > 93)
+      if (tag_id <= 0 || tag_id > 95)
         continue;
       if (tag_id == 1)
         continue; /* checksum is computed and appended last */

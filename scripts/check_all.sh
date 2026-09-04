@@ -89,13 +89,13 @@ gstklv_run_in_repo meson test -C "${build_dir}" --print-errorlogs
 
 gstklv_section "Python Syntax Checks"
 gstklv_run_in_repo python3 -m py_compile \
-  examples/srt-pipelines/python/srt_sender_93tags.py \
-  examples/srt-pipelines/python/srt_receiver_93tags.py \
+  examples/srt-pipelines/python/srt_sender_95tags.py \
+  examples/srt-pipelines/python/srt_receiver_95tags.py \
   examples/ts/python/klv_recorder.py \
   examples/ts/python/klv_video_reader.py \
-  examples/udp-pipelines/python/udp_sender_93tags.py \
-  examples/udp-pipelines/python/udp_receiver_93tags.py \
-  examples/test_93_tags.py \
+  examples/udp-pipelines/python/udp_sender_95tags.py \
+  examples/udp-pipelines/python/udp_receiver_95tags.py \
+  examples/test_95_tags.py \
   tools/capture_ts_from_srt.py \
   tools/ts_pmt_rewrite.py \
   tools/verify_ts_klv.py \
