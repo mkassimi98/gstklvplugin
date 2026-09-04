@@ -16,6 +16,7 @@ A GStreamer 1.x plugin suite for end-to-end KLV metadata workflows. Implements S
 | [doc/installation.md](installation.md) | Manual and automatic install flows, plugin discovery, blacklist recovery |
 | [doc/docker.md](docker.md) | Docker integration patterns, container networking, and troubleshooting |
 | [doc/packaging.md](packaging.md) | Debian/Raspberry Pi packaging workflow |
+| [doc/releasing.md](releasing.md) | GitFlow branches, versioning, tagging, and GitHub release workflow |
 | [doc/standards.md](standards.md) | Standards implemented, encoding rules, compliance scope |
 | [doc/code_reference.md](code_reference.md) | Module layout, key functions, data flow |
 | [doc/design_decisions.md](design_decisions.md) | Rationale behind key design choices |

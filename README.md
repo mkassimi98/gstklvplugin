@@ -58,7 +58,7 @@ cd gstklvplugin
 If you want a specific released state instead of the current default branch:
 
 ```bash
-git clone --branch v1.0.0 --single-branch \
+git clone --branch v1.0.1 --single-branch \
   https://github.com/mkassimi98/gstklvplugin.git
 cd gstklvplugin
 ```
@@ -447,6 +447,7 @@ Tag registry locations:
 | [doc/installation.md](doc/installation.md) | Manual and automatic build/install workflows, discovery, and blacklist recovery |
 | [doc/docker.md](doc/docker.md) | Docker integration guide for development, runtime images, networking, and troubleshooting |
 | [doc/packaging.md](doc/packaging.md) | Debian/Raspberry Pi packaging and distribution workflow |
+| [doc/releasing.md](doc/releasing.md) | GitFlow branches, versioning, tagging, and GitHub release workflow |
 | [doc/standards.md](doc/standards.md) | Standards, encoding rules, and compliance scope |
 | [doc/klv_tags.md](doc/klv_tags.md) | Full MISB ST 0601.8 tag registry table |
 | [doc/code_reference.md](doc/code_reference.md) | Module layout, key functions, and data flow |

@@ -4,9 +4,19 @@ All notable changes to this project are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
----
+## [Unreleased]
 
-## [1.0.0] — YYYY-MM-DD
+## [1.0.1] - 2026-09-04
+
+### Changed
+
+- Project license changed from MIT to GNU AGPL-3.0.
+
+### Fixed
+
+- Corrected the MISB ST 0601.8 UAS Local Set Universal Key, rejected the non-conformant key emitted by v1.0.0, and added full 16-byte conformance coverage ([#2](https://github.com/mkassimi98/gstklvplugin/issues/2)).
+
+## [1.0.0] - 2026-04-06
 
 ### Added
 
@@ -39,18 +49,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Smoke coverage includes Python TS roundtrip, UDP loopback, staged installed-plugin discovery with a clean GStreamer registry, and C++ TS roundtrip when `cmake` is available.
 - Validation helpers also run Python syntax checks, shell syntax checks, and strict Doxygen generation so the release can be checked end to end with a single command.
 
----
-
-## [Unreleased]
-
-### Changed
-
-- Project license changed from MIT to GNU AGPL-3.0.
-
-### Fixed
-
-- Corrected the MISB ST 0601.8 UAS Local Set Universal Key and added full 16-byte conformance coverage ([#2](https://github.com/mkassimi98/gstklvplugin/issues/2)).
-
----
-
+[Unreleased]: https://github.com/mkassimi98/gstklvplugin/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/mkassimi98/gstklvplugin/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/mkassimi98/gstklvplugin/releases/tag/v1.0.0

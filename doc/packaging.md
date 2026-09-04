@@ -44,7 +44,7 @@ packaging/out/
 Typical filename:
 
 ```text
-packaging/out/gstklvplugin_1.0.0_amd64.deb
+packaging/out/gstklvplugin_1.0.1_amd64.deb
 ```
 
 With validation enabled:
@@ -66,13 +66,13 @@ If you want to skip Doxygen during that validation pass:
 On Debian-family systems:
 
 ```bash
-sudo apt install ./packaging/out/gstklvplugin_1.0.0_amd64.deb
+sudo apt install ./packaging/out/gstklvplugin_1.0.1_amd64.deb
 ```
 
 Or with `dpkg`:
 
 ```bash
-sudo dpkg -i ./packaging/out/gstklvplugin_1.0.0_amd64.deb
+sudo dpkg -i ./packaging/out/gstklvplugin_1.0.1_amd64.deb
 ```
 
 Then verify:

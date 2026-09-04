@@ -14,7 +14,7 @@
 #endif
 
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.0.0"
+#define PACKAGE_VERSION "1.0.1"
 #endif
 
 #include "gstklv/klvencode.h"
