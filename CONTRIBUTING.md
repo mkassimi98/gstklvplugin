@@ -190,6 +190,9 @@ doxygen Doxyfile
    - The test commands you ran and their output (or a note if untestable locally).
    - Any known limitations or follow-up work.
 
+Maintainers should follow [doc/releasing.md](doc/releasing.md) for release
+branches, version updates, tags, packages, and GitHub Releases.
+
 ---
 
 ## Environment Variables
