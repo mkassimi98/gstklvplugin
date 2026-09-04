@@ -64,6 +64,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Smoke coverage includes Python TS roundtrip, UDP loopback, staged installed-plugin discovery with a clean GStreamer registry, and C++ TS roundtrip when `cmake` is available.
 - Validation helpers also run Python syntax checks, shell syntax checks, and strict Doxygen generation so the release can be checked end to end with a single command.
 
-[Unreleased]: https://github.com/mkassimi98/gstklvplugin/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/mkassimi98/gstklvplugin/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/mkassimi98/gstklvplugin/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/mkassimi98/gstklvplugin/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/mkassimi98/gstklvplugin/releases/tag/v1.0.0
