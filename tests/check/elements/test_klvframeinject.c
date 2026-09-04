@@ -405,6 +405,51 @@ GST_START_TEST(test_klvframeinject_falls_back_to_properties)
 GST_END_TEST
 
 /**
+ * @brief Verify Tag 95 (SAR Motion Imagery Metadata) is not dropped.
+ *
+ * Regression test for a hard-coded `tag_id > 93` gate that predates the
+ * ST 0601.8 registry correction through Tag 95; it silently discarded any
+ * JSON tag above 93, including the new Tags 94 and 95.
+ */
+GST_START_TEST(test_klvframeinject_accepts_tag_95)
+{
+  const guint8 payload[] = {0x00, 0x00, 0x00, 0x01, 0x09, 0x30};
+  FrameInjectPipeline ctx = frameinject_pipeline_new();
+
+  g_object_set(ctx.inject,
+               "use-system-time",
+               FALSE,
+               "tags-json",
+               "{\"2\":1774033378153350,\"94\":\"hex:0102\",\"95\":\"hex:deadbeef\"}",
+               NULL);
+
+  GstSample *video_sample = push_and_pull_sample(
+    ctx.src,
+    ctx.video_sink,
+    build_input_buffer(payload, sizeof(payload), 4 * GST_SECOND, 3 * GST_SECOND));
+  GstSample *klv_sample = gst_app_sink_try_pull_sample(ctx.klv_sink, 2 * GST_SECOND);
+  fail_unless(klv_sample != NULL, "timed out waiting for KLV sample");
+
+  GstBuffer *klv = gst_sample_get_buffer(klv_sample);
+  fail_unless(klv != NULL);
+
+  KLVJsonTag tags[8] = {0};
+  gint count = decode_klv_to_tags(klv, tags, G_N_ELEMENTS(tags));
+  fail_unless_equals_int(count, 3);
+
+  KLVJsonTag *tag94 = find_tag(tags, count, 94);
+  KLVJsonTag *tag95 = find_tag(tags, count, 95);
+  fail_unless(tag94 != NULL, "Tag 94 was dropped by klvframeinject");
+  fail_unless(tag95 != NULL, "Tag 95 was dropped by klvframeinject");
+
+  free_json_tags(tags, count);
+  gst_sample_unref(video_sample);
+  gst_sample_unref(klv_sample);
+  frameinject_pipeline_free(&ctx);
+}
+GST_END_TEST
+
+/**
  * @brief Build the `klvframeinject` suite definition.
  * @return Populated Check suite.
  */
@@ -419,6 +464,7 @@ klvframeinject_suite(void)
   tcase_add_test(tc, test_klvframeinject_properties);
   tcase_add_test(tc, test_klvframeinject_pushes_video_and_json_klv);
   tcase_add_test(tc, test_klvframeinject_falls_back_to_properties);
+  tcase_add_test(tc, test_klvframeinject_accepts_tag_95);
 
   suite_add_tcase(s, tc);
   return s;

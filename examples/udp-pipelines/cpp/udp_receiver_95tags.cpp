@@ -1,5 +1,5 @@
 /**
- * @file examples/udp-pipelines/cpp/udp_receiver_93tags.cpp
+ * @file examples/udp-pipelines/cpp/udp_receiver_95tags.cpp
  * @brief C++ UDP receiver that decodes MISB ST 0601.8 KLV tags.
  *
  * @ingroup gstklv_examples_cpp

@@ -26,8 +26,8 @@ import time
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-SENDER = REPO_ROOT / "examples" / "udp-pipelines" / "python" / "udp_sender_93tags.py"
-RECEIVER = REPO_ROOT / "examples" / "udp-pipelines" / "python" / "udp_receiver_93tags.py"
+SENDER = REPO_ROOT / "examples" / "udp-pipelines" / "python" / "udp_sender_95tags.py"
+RECEIVER = REPO_ROOT / "examples" / "udp-pipelines" / "python" / "udp_receiver_95tags.py"
 
 
 def pick_free_udp_port() -> int:

@@ -120,12 +120,12 @@ ctest --test-dir build --output-on-failure
 ### Smoke checks
 
 ```bash
-# Local 93-tag roundtrip
-python3 examples/test_93_tags.py
+# Local tags 1-95 roundtrip
+python3 examples/test_95_tags.py
 
 # SRT streaming (two terminals)
-python3 examples/srt-pipelines/python/srt_receiver_93tags.py --host 127.0.0.1 --port 5000
-python3 examples/srt-pipelines/python/srt_sender_93tags.py   --host 0.0.0.0   --port 5000 --count 10
+python3 examples/srt-pipelines/python/srt_receiver_95tags.py --host 127.0.0.1 --port 5000
+python3 examples/srt-pipelines/python/srt_sender_95tags.py   --host 0.0.0.0   --port 5000 --count 10
 
 # File-based TS
 python3 examples/ts/python/klv_recorder.py \

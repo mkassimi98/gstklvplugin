@@ -180,7 +180,7 @@ Practical note:
 
 - the current implementation parses up to 64 JSON tags per buffer in
   `klvmetaenc`
-- for full 93-tag per-frame workflows, the repo examples use `klvframeinject`
+- for full ST 0601.8 (tags 1-95) per-frame workflows, the repo examples use `klvframeinject`
 
 ### 5.2 `klvmetadec`
 

@@ -1,36 +1,44 @@
 /**
- * @file examples/ts/cpp/ts_recorder_93tags.cpp
- * @brief C++ MPEG-TS recorder that writes H.264 with MISB ST 0601.8 KLV tags.
+ * @file examples/srt-pipelines/cpp/srt_sender_95tags.cpp
+ * @brief C++ SRT sender that streams H.264 with MISB ST 0601.8 KLV tags.
  *
  * @ingroup gstklv_examples_cpp
+ * @brief Reference implementations for the C++ demo pipelines.
  *
  * @details
  * This example generates a complete MISB ST 0601.8 tag set, injects it
- * as KLV metadata, and records the result into a `.ts` file. Tags are
- * loaded from `data/stanag4609_tags.ini`. Numeric tags are generated within
- * their declared ranges, string tags get a `DEMO-<tag>` placeholder, and
- * byte tags emit deterministic `hex:` payloads.
+ * as KLV metadata, and streams the result via SRT. Tags are loaded from
+ * `data/stanag4609_tags.ini`. Numeric tags are generated within their
+ * declared ranges, string tags get a `DEMO-<tag>` placeholder, and byte
+ * tags emit deterministic `hex:` payloads.
  *
- * @section gstklv_ts_recorder_pipeline Pipeline Topology
+ * @section gstklv_sender_pipeline Pipeline Topology
+ * The sender pipeline is built as a single GStreamer launch string:
+ *
  * @dot
- * digraph ts_recorder_pipeline {
+ * digraph sender_pipeline {
  *   rankdir=LR;
  *   node [shape=box, style="rounded,filled", fillcolor="#f2f2f2"];
  *   videotestsrc -> videoconvert -> capsfilter -> x264enc -> h264parse -> klvframeinject;
- *   klvframeinject -> queue_video -> mpegtsmux -> tspmtrewrite -> filesink;
+ *   klvframeinject -> queue_video -> mpegtsmux -> tspmtrewrite -> srtsink;
  *   klvframeinject -> queue_klv -> klv_caps -> mpegtsmux;
  *   klv_caps [label="meta/x-klv\nstream-type=21"];
  * }
  * @enddot
  *
- * @note `tspmtrewrite` is configured to emit metadata descriptors and
- * tsdemux-friendly KLVA signaling (the current implementation uses
- * `stream-type=0x06` with KLVA registration).
+ * @section gstklv_sender_flow Execution Flow
+ * 1. Load tag definitions from the INI registry.
+ * 2. Build the GStreamer pipeline and locate key elements.
+ * 3. On a periodic timer, generate a new JSON payload with tag values.
+ * 4. Push JSON to `klvframeinject` via the `tags-json` property.
+ * 5. Print a formatted tag dump for each frame.
+ *
+ * @note `tspmtrewrite` is configured to emit tsdemux-friendly KLVA metadata
+ * signaling in the PMT while preserving STANAG 4609 interoperability.
  */
 
 #include <gst/gst.h>
 #include <glib.h>
-#include <glib/gstdio.h>
 
 #include "gstklv/internal/klv_tag_defs.h"
 
@@ -51,21 +59,23 @@ namespace
 struct Options
 {
   /**
-   * @brief Command line configuration for the TS recorder.
+   * @brief Command line configuration for the sender.
    *
-   * @par Key options
-   * - `output`: Path to the recorded `.ts` file.
-   * - `fps`: Video framerate for the test source.
+   * @par Important options
+   * - `host`: Bind address for SRT listener.
+   * - `port`: UDP/SRT port.
+   * - `fps`: Video framerate.
    * - `bitrate_kbps`: H.264 target bitrate.
    * - `count`: Frame count (0 = run forever).
    * - `tags_ini`: Path to the tag registry.
-   * - `plugin_path`: GST_PLUGIN_PATH override.
+   * - `plugin_path`: GST_PLUGIN_PATH override (where gstklvplugin lives).
+   * - `seed`: Deterministic RNG seed for repeatable tag values.
    */
-  std::string output;
-  int fps = 30;
+  std::string host = "0.0.0.0";
+  int port = 5000;
+  int fps = 2;
   int bitrate_kbps = 2000;
   int count = 0;
-  bool print_all = true;
   std::string tags_ini;
   std::string plugin_path;
   unsigned int seed = 0;
@@ -99,19 +109,6 @@ join_path(const std::string &base, const std::string &rel)
 }
 
 bool
-ensure_parent_dir(const std::string &path)
-{
-  if (path.empty())
-    return false;
-  char *dir = g_path_get_dirname(path.c_str());
-  if (!dir)
-    return false;
-  int result = g_mkdir_with_parents(dir, 0755);
-  g_free(dir);
-  return result == 0;
-}
-
-bool
 parse_hex_uint(const char *text, guint *out)
 {
   if (!text || !out)
@@ -134,6 +131,13 @@ mpegtsmux_supports_enable_custom_mappings()
     g_object_class_find_property(G_OBJECT_GET_CLASS(mux), "enable-custom-mappings");
   gst_object_unref(mux);
   return prop != nullptr;
+}
+
+bool
+has_property(GstElement *element, const char *name)
+{
+  return element && name &&
+         g_object_class_find_property(G_OBJECT_GET_CLASS(element), name) != nullptr;
 }
 
 std::string
@@ -214,27 +218,43 @@ struct TagGenerator
   {
     lat += std::uniform_real_distribution<double>(-0.0001, 0.0001)(rng);
     lon += std::uniform_real_distribution<double>(-0.0001, 0.0001)(rng);
-    alt += std::uniform_real_distribution<double>(-5.0, 5.0)(rng);
-    heading += std::uniform_real_distribution<double>(-2.0, 2.0)(rng);
-    if (heading < 0.0)
-      heading += 360.0;
-    if (heading >= 360.0)
-      heading -= 360.0;
+    alt += std::uniform_real_distribution<double>(-2, 2)(rng);
+    heading =
+      std::fmod(heading + std::uniform_real_distribution<double>(-5, 5)(rng) + 360.0, 360.0);
+    pitch =
+      std::max(-30.0, std::min(30.0, pitch + std::uniform_real_distribution<double>(-2, 2)(rng)));
+    roll =
+      std::max(-45.0, std::min(45.0, roll + std::uniform_real_distribution<double>(-2, 2)(rng)));
+    airspeed = std::max(
+      50.0, std::min(400.0, airspeed + std::uniform_real_distribution<double>(-10, 10)(rng)));
+    north_vel += std::uniform_real_distribution<double>(-5, 5)(rng);
+    east_vel += std::uniform_real_distribution<double>(-5, 5)(rng);
+    up_vel += std::uniform_real_distribution<double>(-2, 2)(rng);
   }
 
   double
-  random_in_range(double min_v, double max_v)
+  random_in_range(double min, double max)
   {
-    if (min_v > max_v)
-      std::swap(min_v, max_v);
-    return std::uniform_real_distribution<double>(min_v, max_v)(rng);
+    if (max <= min)
+      return min;
+    return std::uniform_real_distribution<double>(min, max)(rng);
   }
 
   double
   value_for_tag(int tag_id, const KLVTagDef *td)
   {
-    if (tag_id == 2)
+    if (tag_id == 2) {
       return static_cast<double>(g_get_real_time());
+    }
+    if (tag_id == 72) {
+      return static_cast<double>(event_start_us);
+    }
+    if (tag_id == 13)
+      return lat;
+    if (tag_id == 14)
+      return lon;
+    if (tag_id == 15)
+      return alt;
     if (tag_id == 5)
       return heading;
     if (tag_id == 6)
@@ -245,34 +265,18 @@ struct TagGenerator
       return airspeed;
     if (tag_id == 9)
       return airspeed * 0.95;
-    if (tag_id == 13)
-      return lat;
-    if (tag_id == 14)
-      return lon;
-    if (tag_id == 15)
-      return alt;
-    if (tag_id == 21)
-      return random_in_range(1000.0, 50000.0);
-    if (tag_id == 23)
-      return lat + random_in_range(-0.01, 0.01);
-    if (tag_id == 24)
-      return lon + random_in_range(-0.01, 0.01);
-    if (tag_id == 25)
-      return alt + random_in_range(-50.0, 50.0);
-    if (tag_id == 72)
-      return static_cast<double>(event_start_us);
+    if (tag_id == 51)
+      return up_vel;
     if (tag_id == 79)
       return north_vel;
     if (tag_id == 80)
       return east_vel;
-    if (tag_id == 81)
-      return up_vel;
-    if (tag_id == 82)
-      return north_vel * 1.05;
-    if (tag_id == 83)
-      return east_vel * 1.05;
-    if (tag_id == 84)
-      return up_vel * 1.05;
+    /* Tags 82-89 (Corner Lat/Lon Point 1-4, Full) and 90-93 (Platform
+     * Pitch/Roll/Angle-of-Attack/Sideslip, Full) fall through to the
+     * generic registry-driven random_in_range() below, which already
+     * respects each tag's declared engineering range. Tag 81 (Image
+     * Horizon Pixel Pack) is a "bytes" type and is handled separately
+     * in build_tags_json() before value_for_tag() is ever called. */
 
     if (td && td->has_range) {
       return random_in_range(td->range_min, td->range_max);
@@ -307,15 +311,6 @@ struct GeneratedTag
   double value = 0.0;
 };
 
-/**
- * @brief Build a JSON object for all tags in the registry.
- *
- * @param defs Tag registry loaded from the INI file.
- * @param gen Tag generator for dynamic values.
- * @param out_count Optional count of emitted tags.
- * @param out_tags Optional vector of generated tag values.
- * @return JSON string with numeric tag IDs as keys.
- */
 std::string
 build_tags_json(GHashTable *defs,
                 TagGenerator &gen,
@@ -327,7 +322,7 @@ build_tags_json(GHashTable *defs,
   bool first = true;
   int count = 0;
   for (int tag_id : sorted_tag_ids(defs)) {
-    if (tag_id <= 0 || tag_id > 93 || tag_id == 1)
+    if (tag_id <= 0 || tag_id > 95 || tag_id == 1)
       continue;
     KLVTagDef *td = (KLVTagDef *)g_hash_table_lookup(defs, GINT_TO_POINTER(tag_id));
     if (!td || !td->type)
@@ -401,50 +396,13 @@ tag_units(const KLVTagDef *td)
   return std::string(" ") + td->unit;
 }
 
-/**
- * @brief Print a short per-frame summary (tags 13/14/15).
- */
 void
-print_frame_summary(int frame, const std::vector<GeneratedTag> &tags)
-{
-  auto find_value = [&](int tag_id, double *out) -> bool {
-    for (const auto &tag : tags) {
-      if (tag.tag_id == tag_id && !tag.is_raw) {
-        *out = tag.value;
-        return true;
-      }
-    }
-    return false;
-  };
-
-  double lat = 0.0, lon = 0.0, alt = 0.0;
-  if (find_value(13, &lat) && find_value(14, &lon) && find_value(15, &alt)) {
-    std::cout << "  13 Sensor Latitude:  " << std::fixed << std::setprecision(6) << lat
-              << " Degrees\n";
-    std::cout << "  14 Sensor Longitude: " << std::fixed << std::setprecision(6) << lon
-              << " Degrees\n";
-    std::cout << "  15 Sensor True Altitude: " << std::fixed << std::setprecision(1) << alt
-              << " Meters\n";
-  }
-}
-
-/**
- * @brief Print a full tag dump or short summary per frame.
- */
-void
-print_frame_tags(
-  int frame, int tag_count, const std::vector<GeneratedTag> &tags, GHashTable *defs, bool print_all)
+print_frame_tags(int frame, int tag_count, const std::vector<GeneratedTag> &tags, GHashTable *defs)
 {
   std::cout << "\n" << std::string(80, '-') << "\n";
-  std::cout << "[FRAME " << std::setw(4) << std::setfill('0') << frame << "] Sent "
-            << (tag_count + 1) << " tags (incl. checksum)\n";
+  std::cout << "[FRAME " << std::setw(4) << std::setfill('0') << frame << "] Sent " << tag_count
+            << " tags\n";
   std::cout << std::string(80, '-') << "\n";
-
-  if (!print_all) {
-    print_frame_summary(frame, tags);
-    std::cout << std::string(80, '-') << "\n";
-    return;
-  }
 
   for (const auto &tag : tags) {
     KLVTagDef *td =
@@ -464,52 +422,63 @@ print_frame_tags(
   std::cout << std::string(80, '-') << "\n";
 }
 
-struct RecorderState
+gboolean
+on_bus_message(GstBus *bus, GstMessage *msg, gpointer user_data)
 {
-  /// Pipeline used by the recorder.
+  GMainLoop *loop = static_cast<GMainLoop *>(user_data);
+  switch (GST_MESSAGE_TYPE(msg)) {
+    case GST_MESSAGE_ERROR: {
+      GError *err = nullptr;
+      gchar *dbg = nullptr;
+      gst_message_parse_error(msg, &err, &dbg);
+      std::cerr << "ERROR: " << (err ? err->message : "unknown") << std::endl;
+      if (dbg)
+        std::cerr << "DEBUG: " << dbg << std::endl;
+      g_clear_error(&err);
+      g_free(dbg);
+      g_main_loop_quit(loop);
+      break;
+    }
+    case GST_MESSAGE_EOS: g_main_loop_quit(loop); break;
+    default: break;
+  }
+  return TRUE;
+}
+
+struct SenderState
+{
+  /// Pipeline and elements used by the periodic timer.
   GstElement *pipeline = nullptr;
-  /// klvframeinject element for tag updates.
   GstElement *inject = nullptr;
-  /// Tag registry used to generate values.
+  GMainLoop *loop = nullptr;
   GHashTable *defs = nullptr;
-  /// Tag generator state.
   TagGenerator *gen = nullptr;
-  /// Number of frames already processed.
   int sent = 0;
-  /// Max frames to record (0 = infinite).
   int max_count = 0;
-  /// Print all tags or summary only.
-  bool print_all = true;
 };
 
-/**
- * @brief Pad probe that updates tags per video buffer.
- *
- * This probe is attached to the `klvframeinject` sink pad. It updates the
- * `tags-json` property once per frame and optionally triggers EOS after
- * the configured number of frames.
- */
-GstPadProbeReturn
-on_inject_buffer(GstPad *, GstPadProbeInfo *, gpointer user_data)
+gboolean
+on_tick(gpointer user_data)
 {
-  RecorderState *state = static_cast<RecorderState *>(user_data);
+  SenderState *state = static_cast<SenderState *>(user_data);
   if (!state || !state->inject || !state->defs || !state->gen)
-    return GST_PAD_PROBE_OK;
+    return G_SOURCE_REMOVE;
 
-  state->sent++;
   state->gen->update();
   int tag_count = 0;
   std::vector<GeneratedTag> tags;
+  tags.reserve(96);
   std::string json = build_tags_json(state->defs, *state->gen, &tag_count, &tags);
   g_object_set(state->inject, "tags-json", json.c_str(), nullptr);
 
-  print_frame_tags(state->sent, tag_count, tags, state->defs, state->print_all);
+  state->sent++;
+  print_frame_tags(state->sent, tag_count, tags, state->defs);
 
   if (state->max_count > 0 && state->sent >= state->max_count) {
     gst_element_send_event(state->pipeline, gst_event_new_eos());
-    return GST_PAD_PROBE_REMOVE;
+    return G_SOURCE_REMOVE;
   }
-  return GST_PAD_PROBE_OK;
+  return G_SOURCE_CONTINUE;
 }
 
 } // namespace
@@ -517,8 +486,14 @@ on_inject_buffer(GstPad *, GstPadProbeInfo *, gpointer user_data)
 int
 main(int argc, char **argv)
 {
+  /**
+   * @brief Entry point for the C++ SRT sender.
+   *
+   * Initializes GStreamer, loads tag definitions, builds the pipeline,
+   * and starts a periodic timer to push new KLV payloads.
+   */
   Options opt;
-  gchar *output_opt = nullptr;
+  gchar *host_opt = nullptr;
   gchar *tags_ini_opt = nullptr;
   gchar *plugin_path_opt = nullptr;
   gchar *metadata_app_identifier_opt = nullptr;
@@ -527,17 +502,11 @@ main(int argc, char **argv)
   gchar *metadata_format_str = nullptr;
   gchar *metadata_service_id_str = nullptr;
   gchar *metadata_flags_str = nullptr;
-  gboolean print_summary = FALSE;
 
   GOptionEntry entries[] = {
-    {"output",
-     0,
-     0,
-     G_OPTION_ARG_STRING,
-     &output_opt,
-     (gchar *)"Output .ts file",
-     (gchar *)"examples/ts/recordings/capture.ts"},
-    {"fps", 0, 0, G_OPTION_ARG_INT, &opt.fps, (gchar *)"Frames per second", (gchar *)"30"},
+    {"host", 0, 0, G_OPTION_ARG_STRING, &host_opt, (gchar *)"Bind host", (gchar *)"0.0.0.0"},
+    {"port", 0, 0, G_OPTION_ARG_INT, &opt.port, (gchar *)"Bind port", (gchar *)"5000"},
+    {"fps", 0, 0, G_OPTION_ARG_INT, &opt.fps, (gchar *)"Frames per second", (gchar *)"2"},
     {"bitrate",
      0,
      0,
@@ -552,14 +521,6 @@ main(int argc, char **argv)
      &opt.count,
      (gchar *)"Frame count (0 = infinite)",
      (gchar *)"0"},
-    {"print-all", 0, 0, G_OPTION_ARG_NONE, &opt.print_all, (gchar *)"Print all tags", nullptr},
-    {"print-summary",
-     0,
-     0,
-     G_OPTION_ARG_NONE,
-     &print_summary,
-     (gchar *)"Only print tags 13/14/15",
-     nullptr},
     {"tags-ini",
      0,
      0,
@@ -619,7 +580,7 @@ main(int argc, char **argv)
      (gchar *)"0x00"},
     {nullptr}};
 
-  GOptionContext *ctx = g_option_context_new(" - C++ TS recorder with MISB ST 0601.8 tags");
+  GOptionContext *ctx = g_option_context_new(" - C++ SRT sender with MISB ST 0601.8 tags");
   g_option_context_add_main_entries(ctx, entries, nullptr);
   g_option_context_set_ignore_unknown_options(ctx, TRUE);
 
@@ -639,9 +600,9 @@ main(int argc, char **argv)
     g_free(metadata_flags_str);
   };
 
-  if (output_opt) {
-    opt.output = output_opt;
-    g_free(output_opt);
+  if (host_opt) {
+    opt.host = host_opt;
+    g_free(host_opt);
   }
   if (tags_ini_opt) {
     opt.tags_ini = tags_ini_opt;
@@ -659,8 +620,6 @@ main(int argc, char **argv)
     opt.metadata_format_identifier = metadata_format_identifier_opt;
     g_free(metadata_format_identifier_opt);
   }
-  if (print_summary)
-    opt.print_all = false;
 
   if (metadata_app_format_str &&
       !parse_hex_uint(metadata_app_format_str, &opt.metadata_app_format)) {
@@ -689,17 +648,10 @@ main(int argc, char **argv)
     opt.seed_provided = true;
 
   std::string source_dir = default_source_dir();
-  std::string default_output = join_path(source_dir, "examples/ts/recordings/capture.ts");
-  if (opt.output.empty())
-    opt.output = default_output;
   if (opt.tags_ini.empty())
     opt.tags_ini = join_path(source_dir, "data/stanag4609_tags.ini");
   if (opt.plugin_path.empty())
     opt.plugin_path = join_path(source_dir, "build");
-  if (!ensure_parent_dir(opt.output)) {
-    std::cerr << "ERROR Failed to create output directory for: " << opt.output << std::endl;
-    return 1;
-  }
 
   if (!g_getenv("GST_PLUGIN_PATH"))
     g_setenv("GST_PLUGIN_PATH", opt.plugin_path.c_str(), TRUE);
@@ -723,10 +675,11 @@ main(int argc, char **argv)
   }
 
   std::cout << "\n" << std::string(100, '=') << "\n";
-  std::cout << "TS RECORDER (C++) - MISB ST 0601.8 KLV TAGS\n";
+  std::cout << "SRT SENDER (C++) - MISB ST 0601.8 KLV TAGS\n";
   std::cout << std::string(100, '=') << "\n\n";
   std::cout << "> Configuration:\n";
-  std::cout << "  Output: " << opt.output << "\n";
+  std::cout << "  Host (bind): " << opt.host << "\n";
+  std::cout << "  Port: " << opt.port << "\n";
   std::cout << "  Framerate: " << opt.fps << " fps\n";
   std::cout << "  Bitrate: " << opt.bitrate_kbps << " kbps\n";
   std::cout << "  Plugin path: " << opt.plugin_path << "\n";
@@ -734,25 +687,19 @@ main(int argc, char **argv)
   std::cout << "  mpegtsmux custom mappings: "
             << (supports_custom_mappings ? "enabled" : "disabled (not supported by this GST)")
             << "\n";
-  std::cout << "> PMT metadata descriptor:\n";
-  std::cout << "  metadata_application_format: 0x" << std::hex << std::setw(4) << std::setfill('0')
-            << opt.metadata_app_format << std::dec << "\n";
-  std::cout << "  metadata_application_format_identifier: " << opt.metadata_app_identifier << "\n";
-  std::cout << "  metadata_format: 0x" << std::hex << std::setw(2) << std::setfill('0')
-            << opt.metadata_format << std::dec << "\n";
-  std::cout << "  metadata_format_identifier: " << opt.metadata_format_identifier << "\n";
-  std::cout << "  metadata_service_id: 0x" << std::hex << std::setw(2) << std::setfill('0')
-            << opt.metadata_service_id << std::dec << "\n";
-  std::cout << "  decoder_config_flags: 0x" << std::hex << std::setw(2) << std::setfill('0')
-            << opt.metadata_flags << std::dec << "\n\n";
+  std::cout << "  SRT: listener on " << opt.host << ":" << opt.port << "\n\n";
 
+  const int gop = std::max(2, opt.fps * 2);
   std::ostringstream pipeline_str;
   pipeline_str << "videotestsrc is-live=true ! videoconvert ! "
-               << "video/x-raw,format=I420,width=640,height=480,framerate=" << opt.fps << "/1 ! "
-               << "x264enc bitrate=" << opt.bitrate_kbps << " tune=zerolatency ! " << "h264parse ! "
+               << "video/x-raw,width=640,height=480,framerate=" << opt.fps << "/1 ! "
+               << "x264enc name=enc bitrate=" << opt.bitrate_kbps
+               << " speed-preset=ultrafast tune=zerolatency ! " << "h264parse name=vparse ! "
                << "klvframeinject name=inject " << "inject.video_src ! queue ! mpegtsmux name=mux"
                << (supports_custom_mappings ? " enable-custom-mappings=true" : "") << " ! "
-               << "tspmtrewrite name=pmtrw ! " << "filesink location=" << opt.output << " "
+               << "tspmtrewrite name=pmtrw ! " << "srtsink mode=listener localaddress=" << opt.host
+               << " localport=" << opt.port << " "
+               << "latency=125 wait-for-connection=false sync=false async=false "
                << "inject.klv_src ! queue ! "
                   "meta/x-klv,parsed=true,stream-format=klv,stream-type=(int)21 ! mux.";
 
@@ -769,15 +716,45 @@ main(int argc, char **argv)
 
   GstElement *inject = gst_bin_get_by_name(GST_BIN(pipeline), "inject");
   GstElement *pmtrw = gst_bin_get_by_name(GST_BIN(pipeline), "pmtrw");
-  if (!inject || !pmtrw) {
+  GstElement *mux = gst_bin_get_by_name(GST_BIN(pipeline), "mux");
+  GstElement *enc = gst_bin_get_by_name(GST_BIN(pipeline), "enc");
+  GstElement *vparse = gst_bin_get_by_name(GST_BIN(pipeline), "vparse");
+  if (!inject || !pmtrw || !mux || !enc || !vparse) {
     std::cerr << "ERROR Failed to get elements from pipeline" << std::endl;
     if (inject)
       gst_object_unref(inject);
     if (pmtrw)
       gst_object_unref(pmtrw);
+    if (mux)
+      gst_object_unref(mux);
+    if (enc)
+      gst_object_unref(enc);
+    if (vparse)
+      gst_object_unref(vparse);
     gst_object_unref(pipeline);
     g_hash_table_destroy(defs);
     return 1;
+  }
+
+  if (has_property(mux, "alignment")) {
+    g_object_set(mux, "alignment", 7, nullptr);
+  }
+  if (has_property(enc, "key-int-max")) {
+    g_object_set(enc, "key-int-max", gop, nullptr);
+  }
+  if (has_property(enc, "bframes")) {
+    g_object_set(enc, "bframes", 0u, nullptr);
+  }
+  if (has_property(enc, "option-string")) {
+    std::ostringstream enc_opts;
+    enc_opts << "keyint=" << gop << ":min-keyint=" << gop << ":scenecut=0:repeat-headers=1:aud=1";
+    g_object_set(enc, "option-string", enc_opts.str().c_str(), nullptr);
+  }
+  if (has_property(enc, "aud")) {
+    g_object_set(enc, "aud", TRUE, nullptr);
+  }
+  if (has_property(vparse, "config-interval")) {
+    g_object_set(vparse, "config-interval", -1, nullptr);
   }
 
   g_object_set(pmtrw,
@@ -796,63 +773,39 @@ main(int argc, char **argv)
                nullptr);
 
   TagGenerator gen(opt.seed_provided ? opt.seed : 0);
-  RecorderState state;
+  SenderState state;
   state.pipeline = pipeline;
   state.inject = inject;
+  state.loop = g_main_loop_new(nullptr, FALSE);
   state.defs = defs;
   state.gen = &gen;
   state.sent = 0;
   state.max_count = opt.count;
-  state.print_all = opt.print_all;
 
   int first_count = 0;
   std::string first_json = build_tags_json(defs, gen, &first_count, nullptr);
   g_object_set(inject, "tags-json", first_json.c_str(), nullptr);
 
-  GstPad *sink_pad = gst_element_get_static_pad(inject, "sink");
-  if (sink_pad) {
-    gst_pad_add_probe(sink_pad, GST_PAD_PROBE_TYPE_BUFFER, on_inject_buffer, &state, nullptr);
-    gst_object_unref(sink_pad);
-  }
-
-  GMainLoop *loop = g_main_loop_new(nullptr, FALSE);
   GstBus *bus = gst_element_get_bus(pipeline);
-  gst_bus_add_watch(
-    bus,
-    [](GstBus *, GstMessage *msg, gpointer user_data) -> gboolean {
-      GMainLoop *loop = static_cast<GMainLoop *>(user_data);
-      switch (GST_MESSAGE_TYPE(msg)) {
-        case GST_MESSAGE_ERROR: {
-          GError *err = nullptr;
-          gchar *dbg = nullptr;
-          gst_message_parse_error(msg, &err, &dbg);
-          std::cerr << "ERROR: " << (err ? err->message : "unknown") << std::endl;
-          if (dbg)
-            std::cerr << "DEBUG: " << dbg << std::endl;
-          g_clear_error(&err);
-          g_free(dbg);
-          g_main_loop_quit(loop);
-          break;
-        }
-        case GST_MESSAGE_EOS: g_main_loop_quit(loop); break;
-        default: break;
-      }
-      return TRUE;
-    },
-    loop);
+  gst_bus_add_watch(bus, on_bus_message, state.loop);
   gst_object_unref(bus);
 
   gst_element_set_state(pipeline, GST_STATE_PLAYING);
-  g_main_loop_run(loop);
+
+  guint interval_ms = opt.fps > 0 ? static_cast<guint>(1000 / opt.fps) : 500;
+  g_timeout_add(interval_ms, on_tick, &state);
+
+  g_main_loop_run(state.loop);
 
   gst_element_set_state(pipeline, GST_STATE_NULL);
   g_object_unref(inject);
   g_object_unref(pmtrw);
+  g_object_unref(mux);
+  g_object_unref(enc);
+  g_object_unref(vparse);
   gst_object_unref(pipeline);
-  g_main_loop_unref(loop);
+  g_main_loop_unref(state.loop);
   g_hash_table_destroy(defs);
   free_meta_strings();
-
-  std::cout << "\nOK Recording complete (" << state.sent << " frames)\n";
   return 0;
 }
