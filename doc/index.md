@@ -4,7 +4,7 @@
   <img src="assets/gstklvplugin_icon_v2.png" alt="gstklvplugin icon" width="220" />
 </p>
 
-A GStreamer 1.x plugin suite for end-to-end KLV metadata workflows. Implements SMPTE ST 336, MISB ST 0601.8 (93 tags), STANAG 4609, and MISB ST 1402. Written in C11.
+A GStreamer 1.x plugin suite for end-to-end KLV metadata workflows. Implements SMPTE ST 336, MISB ST 0601.8 (tags 1-95), STANAG 4609, and MISB ST 1402. Written in C11.
 
 ---
 
@@ -23,7 +23,7 @@ A GStreamer 1.x plugin suite for end-to-end KLV metadata workflows. Implements S
 | [doc/klv_tags.md](klv_tags.md) | Full MISB ST 0601.8 tag registry table |
 | [doc/compliance_appendix.md](compliance_appendix.md) | PMT descriptor bytes and verification steps |
 | [doc/examples.md](examples.md) | Example workflows — Python and C++ |
-| [doc/93_tags.md](93_tags.md) | Full 93-tag ST 0601.8 workflow |
+| [doc/95_tags.md](95_tags.md) | Full ST 0601.8 tags 1-95 workflow |
 | [doc/srt_pipelines.md](srt_pipelines.md) | SRT pipeline composition and options |
 | [doc/udp_pipelines.md](udp_pipelines.md) | UDP pipeline composition and options |
 | [doc/tests.md](tests.md) | Test suite — Meson + gst-check |
@@ -56,7 +56,7 @@ src/ts/                     MPEG-TS PSI utilities
   ts_crc32.c                CRC-32/MPEG-2
   ts_psi.c                  PAT/PMT parsing and PMT builder
 
-data/stanag4609_tags.ini    Authoritative tag registry (all 93 tags)
+data/stanag4609_tags.ini    Authoritative tag registry (tags 1-95)
 ```
 
 ---
@@ -110,21 +110,21 @@ gst-inspect-1.0 tspmtrewrite
 
 ## Quick Commands
 
-Local 93-tag roundtrip:
+Local tags 1-95 roundtrip:
 
 ```bash
-python3 examples/test_93_tags.py
+python3 examples/test_95_tags.py
 ```
 
 SRT streaming:
 
 ```bash
 # Terminal 1 — receiver
-python3 examples/srt-pipelines/python/srt_receiver_93tags.py \
+python3 examples/srt-pipelines/python/srt_receiver_95tags.py \
   --host 127.0.0.1 --port 5000
 
 # Terminal 2 — sender
-python3 examples/srt-pipelines/python/srt_sender_93tags.py \
+python3 examples/srt-pipelines/python/srt_sender_95tags.py \
   --host 0.0.0.0 --port 5000 --count 50
 ```
 
@@ -132,11 +132,11 @@ UDP streaming:
 
 ```bash
 # Terminal 1 — receiver
-python3 examples/udp-pipelines/python/udp_receiver_93tags.py \
+python3 examples/udp-pipelines/python/udp_receiver_95tags.py \
   --host 0.0.0.0 --port 5000
 
 # Terminal 2 — sender
-python3 examples/udp-pipelines/python/udp_sender_93tags.py \
+python3 examples/udp-pipelines/python/udp_sender_95tags.py \
   --host 127.0.0.1 --port 5000 --count 50
 ```
 
@@ -170,7 +170,7 @@ python3 tools/verify_ts_klv.py capture.ts --list-all
 | All elements visible | `GST_PLUGIN_PATH=build/src gst-inspect-1.0 klvmetaenc` (× 4) |
 | Unit tests pass | `meson test -C build` |
 | Smoke tests pass | `meson test -C build smoke/ts_roundtrip_python smoke/udp_loopback_python` |
-| 93-tag roundtrip passes | `python3 examples/test_93_tags.py` |
+| tags 1-95 roundtrip passes | `python3 examples/test_95_tags.py` |
 | PMT signals KLV (`0x06 + KLVA` in current repo) | `python3 tools/verify_ts_klv.py capture.ts --list-all` |
 | `metadata_descriptor (0x26)` present | (same verify command) |
 

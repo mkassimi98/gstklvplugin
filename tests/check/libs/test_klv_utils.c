@@ -57,6 +57,19 @@ find_tag(KLVJsonTag *tags, gint count, gint tag_id)
 }
 
 /**
+ * @brief Check whether a tag definition's parsed range matches within tolerance.
+ * @param td Tag definition to inspect.
+ * @param min Expected range minimum.
+ * @param max Expected range maximum.
+ * @return `TRUE` when @p td has a range matching @p min / @p max.
+ */
+static gboolean
+td_has_range_close(const KLVTagDef *td, gdouble min, gdouble max)
+{
+  return td->has_range && fabs(td->range_min - min) < 1e-6 && fabs(td->range_max - max) < 1e-6;
+}
+
+/**
  * @brief Verify short-form BER length encoding and decoding.
  */
 GST_START_TEST(test_klv_ber_encode_decode_short)
@@ -135,6 +148,151 @@ GST_START_TEST(test_klv_tag_defs_load_ini)
   fail_unless(tag13->has_range, "Tag 13 should have range information");
   fail_unless(fabs(tag13->range_min + 90.0) < 1e-6);
   fail_unless(fabs(tag13->range_max - 90.0) < 1e-6);
+
+  g_hash_table_destroy(defs);
+}
+GST_END_TEST
+
+/**
+ * @brief Verify the ST 0601.8 tag registry covers tags 79-95 correctly.
+ *
+ * ST 0601.8 (23 Oct 2014) defines Local Set tags through Tag 95. The
+ * registry previously diverged from the standard starting at Tag 81,
+ * where several non-ST-0601.8 velocity/angle entries displaced the
+ * Image Horizon Pixel Pack, Full Corner coordinates, Full platform
+ * angles, MIIS Core Identifier, and SAR Motion Imagery Metadata.
+ */
+GST_START_TEST(test_klv_tag_defs_st0601_8_tags_79_to_95)
+{
+  gchar *ini = g_build_filename(GSTKLVPLUGIN_SOURCE_DIR, "data", "stanag4609_tags.ini", NULL);
+  GHashTable *defs = klv_load_tag_defs_from_ini(ini);
+  g_free(ini);
+  fail_unless(defs != NULL);
+
+  /* Tags 79-80 are unchanged: Sensor North/East Velocity. */
+  KLVTagDef *tag79 = g_hash_table_lookup(defs, GINT_TO_POINTER(79));
+  fail_unless(tag79 != NULL, "Tag 79 missing");
+  fail_unless(g_strcmp0(tag79->name, "Sensor North Velocity") == 0);
+
+  KLVTagDef *tag80 = g_hash_table_lookup(defs, GINT_TO_POINTER(80));
+  fail_unless(tag80 != NULL, "Tag 80 missing");
+  fail_unless(g_strcmp0(tag80->name, "Sensor East Velocity") == 0);
+
+  /* Tag 81 must be the Image Horizon Pixel Pack, not Sensor Up Velocity. */
+  KLVTagDef *tag81 = g_hash_table_lookup(defs, GINT_TO_POINTER(81));
+  fail_unless(tag81 != NULL, "Tag 81 missing");
+  fail_unless(g_strcmp0(tag81->name, "Image Horizon Pixel Pack") == 0,
+              "unexpected Tag 81 name: %s",
+              GST_STR_NULL(tag81->name));
+  fail_unless(g_strcmp0(tag81->type, "bytes") == 0, "Tag 81 must be opaque bytes");
+
+  /* Tags 82-89: the eight Full Corner coordinate fields. */
+  static const struct
+  {
+    gint id;
+    const gchar *name;
+    gdouble range;
+  } corners[] = {
+    {82, "Corner Latitude Point 1 (Full)", 90.0},
+    {83, "Corner Longitude Point 1 (Full)", 180.0},
+    {84, "Corner Latitude Point 2 (Full)", 90.0},
+    {85, "Corner Longitude Point 2 (Full)", 180.0},
+    {86, "Corner Latitude Point 3 (Full)", 90.0},
+    {87, "Corner Longitude Point 3 (Full)", 180.0},
+    {88, "Corner Latitude Point 4 (Full)", 90.0},
+    {89, "Corner Longitude Point 4 (Full)", 180.0},
+  };
+  for (guint i = 0; i < G_N_ELEMENTS(corners); i++) {
+    KLVTagDef *td = g_hash_table_lookup(defs, GINT_TO_POINTER(corners[i].id));
+    fail_unless(td != NULL, "Tag %d missing", corners[i].id);
+    fail_unless(g_strcmp0(td->name, corners[i].name) == 0,
+                "unexpected Tag %d name: %s",
+                corners[i].id,
+                GST_STR_NULL(td->name));
+    fail_unless(g_strcmp0(td->type, "int32") == 0, "Tag %d must be int32", corners[i].id);
+    fail_unless(td->has_range, "Tag %d must have range", corners[i].id);
+    fail_unless(fabs(td->range_min + corners[i].range) < 1e-6);
+    fail_unless(fabs(td->range_max - corners[i].range) < 1e-6);
+  }
+
+  /* Tags 90-93: the four Full platform angle fields, +/-90 degrees. */
+  static const struct
+  {
+    gint id;
+    const gchar *name;
+  } angles[] = {
+    {90, "Platform Pitch Angle (Full)"},
+    {91, "Platform Roll Angle (Full)"},
+    {92, "Platform Angle of Attack (Full)"},
+    {93, "Platform Sideslip Angle (Full)"},
+  };
+  for (guint i = 0; i < G_N_ELEMENTS(angles); i++) {
+    KLVTagDef *td = g_hash_table_lookup(defs, GINT_TO_POINTER(angles[i].id));
+    fail_unless(td != NULL, "Tag %d missing", angles[i].id);
+    fail_unless(g_strcmp0(td->name, angles[i].name) == 0,
+                "unexpected Tag %d name: %s",
+                angles[i].id,
+                GST_STR_NULL(td->name));
+    fail_unless(g_strcmp0(td->type, "int32") == 0, "Tag %d must be int32", angles[i].id);
+    fail_unless(td->has_range, "Tag %d must have range", angles[i].id);
+    fail_unless(fabs(td->range_min + 90.0) < 1e-6);
+    fail_unless(fabs(td->range_max - 90.0) < 1e-6);
+  }
+
+  /* Tag 94: MIIS Core Identifier (ST 1204 Binary Value, opaque). */
+  KLVTagDef *tag94 = g_hash_table_lookup(defs, GINT_TO_POINTER(94));
+  fail_unless(tag94 != NULL, "Tag 94 missing");
+  fail_unless(g_strcmp0(tag94->name, "MIIS Core Identifier") == 0);
+  fail_unless(g_strcmp0(tag94->type, "bytes") == 0);
+
+  /* Tag 95: SAR Motion Imagery Metadata (nested ST 1206 Local Set, opaque). */
+  KLVTagDef *tag95 = g_hash_table_lookup(defs, GINT_TO_POINTER(95));
+  fail_unless(tag95 != NULL, "Tag 95 missing");
+  fail_unless(g_strcmp0(tag95->name, "SAR Motion Imagery Metadata") == 0);
+  fail_unless(g_strcmp0(tag95->type, "bytes") == 0);
+
+  /* No spurious Tag 96 -- the registry ends at Tag 95 for ST 0601.8. */
+  fail_unless(g_hash_table_lookup(defs, GINT_TO_POINTER(96)) == NULL,
+              "registry must not define tags beyond ST 0601.8's Tag 95");
+
+  g_hash_table_destroy(defs);
+}
+GST_END_TEST
+
+/**
+ * @brief Verify tags outside 79-95 that were also found incorrect during
+ * the ST 0601.8 audit: Tag 12 (String, not uint8), Tag 20 (uint32 0..360,
+ * not int32 +/-180), and Tags 43/44 (uint8 Pixels 0..512, not uint16
+ * Meters 0..10000).
+ */
+GST_START_TEST(test_klv_tag_defs_st0601_8_other_corrections)
+{
+  gchar *ini = g_build_filename(GSTKLVPLUGIN_SOURCE_DIR, "data", "stanag4609_tags.ini", NULL);
+  GHashTable *defs = klv_load_tag_defs_from_ini(ini);
+  g_free(ini);
+  fail_unless(defs != NULL);
+
+  KLVTagDef *tag12 = g_hash_table_lookup(defs, GINT_TO_POINTER(12));
+  fail_unless(tag12 != NULL, "Tag 12 missing");
+  fail_unless(g_strcmp0(tag12->type, "String") == 0, "Tag 12 must be String");
+  fail_unless(tag12->len == 127);
+
+  KLVTagDef *tag20 = g_hash_table_lookup(defs, GINT_TO_POINTER(20));
+  fail_unless(tag20 != NULL, "Tag 20 missing");
+  fail_unless(g_strcmp0(tag20->type, "uint32") == 0, "Tag 20 must be uint32");
+  fail_unless(td_has_range_close(tag20, 0.0, 360.0));
+
+  KLVTagDef *tag43 = g_hash_table_lookup(defs, GINT_TO_POINTER(43));
+  fail_unless(tag43 != NULL, "Tag 43 missing");
+  fail_unless(g_strcmp0(tag43->type, "uint8") == 0, "Tag 43 must be uint8");
+  fail_unless(tag43->len == 1);
+  fail_unless(td_has_range_close(tag43, 0.0, 512.0));
+
+  KLVTagDef *tag44 = g_hash_table_lookup(defs, GINT_TO_POINTER(44));
+  fail_unless(tag44 != NULL, "Tag 44 missing");
+  fail_unless(g_strcmp0(tag44->type, "uint8") == 0, "Tag 44 must be uint8");
+  fail_unless(tag44->len == 1);
+  fail_unless(td_has_range_close(tag44, 0.0, 512.0));
 
   g_hash_table_destroy(defs);
 }
@@ -262,6 +420,8 @@ klv_utils_suite(void)
   tcase_add_test(tc, test_klv_scaling_helpers);
   tcase_add_test(tc, test_klv_checksum_bcc16);
   tcase_add_test(tc, test_klv_tag_defs_load_ini);
+  tcase_add_test(tc, test_klv_tag_defs_st0601_8_tags_79_to_95);
+  tcase_add_test(tc, test_klv_tag_defs_st0601_8_other_corrections);
   tcase_add_test(tc, test_klv_tag_defs_parse_ranges);
   tcase_add_test(tc, test_klv_json_parse_flat_numeric_and_raw);
   tcase_add_test(tc, test_klv_json_preserves_large_integer_text);

@@ -8,29 +8,29 @@ Working end-to-end example workflows for gstklvplugin. The focus is on reproduci
 
 ```
 examples/
-├── test_93_tags.py                      Local 93-tag roundtrip validation
+├── test_95_tags.py                      Local tags 1-95 roundtrip validation
 ├── setup-env.sh                         Optional shell environment helper
 ├── srt-pipelines/
 │   ├── python/
-│   │   ├── srt_sender_93tags.py         SRT sender — Python
-│   │   └── srt_receiver_93tags.py       SRT receiver — Python
+│   │   ├── srt_sender_95tags.py         SRT sender — Python
+│   │   └── srt_receiver_95tags.py       SRT receiver — Python
 │   └── cpp/
-│       ├── srt_sender_93tags.cpp        SRT sender — C++
-│       └── srt_receiver_93tags.cpp      SRT receiver — C++
+│       ├── srt_sender_95tags.cpp        SRT sender — C++
+│       └── srt_receiver_95tags.cpp      SRT receiver — C++
 ├── udp-pipelines/
 │   ├── python/
-│   │   ├── udp_sender_93tags.py         UDP sender — Python
-│   │   └── udp_receiver_93tags.py       UDP receiver — Python
+│   │   ├── udp_sender_95tags.py         UDP sender — Python
+│   │   └── udp_receiver_95tags.py       UDP receiver — Python
 │   └── cpp/
-│       ├── udp_sender_93tags.cpp        UDP sender — C++
-│       └── udp_receiver_93tags.cpp      UDP receiver — C++
+│       ├── udp_sender_95tags.cpp        UDP sender — C++
+│       └── udp_receiver_95tags.cpp      UDP receiver — C++
 └── ts/
     ├── python/
     │   ├── klv_recorder.py              File-based TS recorder — Python
     │   └── klv_video_reader.py          File-based TS reader — Python
     ├── cpp/
-    │   ├── ts_recorder_93tags.cpp       File-based TS recorder — C++
-    │   └── ts_video_reader_93tags.cpp   File-based TS reader — C++
+    │   ├── ts_recorder_95tags.cpp       File-based TS recorder — C++
+    │   └── ts_video_reader_95tags.cpp   File-based TS reader — C++
     └── recordings/                      Output directory for .ts captures
 ```
 
@@ -38,13 +38,13 @@ examples/
 
 ## 1. Local Validation (No Network)
 
-**`examples/test_93_tags.py`**
+**`examples/test_95_tags.py`**
 
-Validates the full JSON -> KLV -> JSON roundtrip for all 93 MISB ST 0601.8 tags using `klvmetaenc` and `klvmetadec`.
+Validates the full JSON -> KLV -> JSON roundtrip for all MISB ST 0601.8 tags (1-95) using `klvmetaenc` and `klvmetadec`.
 
 ```bash
 export GST_PLUGIN_PATH="$PWD/build/src:$GST_PLUGIN_PATH"
-python3 examples/test_93_tags.py
+python3 examples/test_95_tags.py
 ```
 
 ---
@@ -54,14 +54,14 @@ python3 examples/test_93_tags.py
 Receiver first:
 
 ```bash
-python3 examples/srt-pipelines/python/srt_receiver_93tags.py \
+python3 examples/srt-pipelines/python/srt_receiver_95tags.py \
   --host 127.0.0.1 --port 5000
 ```
 
 Then sender:
 
 ```bash
-python3 examples/srt-pipelines/python/srt_sender_93tags.py \
+python3 examples/srt-pipelines/python/srt_sender_95tags.py \
   --host 0.0.0.0 --port 5000 --count 50
 ```
 
@@ -108,14 +108,14 @@ The C++ SRT examples now mirror the same transport tuning as the Python ones: `a
 Receiver first:
 
 ```bash
-python3 examples/udp-pipelines/python/udp_receiver_93tags.py \
+python3 examples/udp-pipelines/python/udp_receiver_95tags.py \
   --host 0.0.0.0 --port 5000
 ```
 
 Then sender:
 
 ```bash
-python3 examples/udp-pipelines/python/udp_sender_93tags.py \
+python3 examples/udp-pipelines/python/udp_sender_95tags.py \
   --host 127.0.0.1 --port 5000 --count 50
 ```
 

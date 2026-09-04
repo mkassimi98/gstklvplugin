@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-@file examples/udp-pipelines/python/udp_sender_93tags.py
+@file examples/udp-pipelines/python/udp_sender_95tags.py
 @brief Python UDP sender example for MISB ST 0601.8 KLV metadata.
 @ingroup gstklv_examples_python
 
@@ -158,7 +158,7 @@ class TagValueGenerator:
             "9": self.airspeed * 0.95,  # Platform Indicated Airspeed
             "10": "DEMO-SENSOR",  # Platform Designation
             "11": "FLIR-TYPE-A",  # Image Source Sensor
-            "12": random.randint(0, 255),  # Image Coordinate System
+            "12": "Geodetic WGS84",  # Image Coordinate System
             "13": self.latitude,  # Sensor Latitude
             "14": self.longitude,  # Sensor Longitude
             "15": self.altitude,  # Sensor True Altitude
@@ -223,17 +223,23 @@ class TagValueGenerator:
             "78": self.altitude,  # Frame Center Height Above Ellipsoid
             "79": self.north_vel,  # Sensor North Velocity
             "80": self.east_vel,  # Sensor East Velocity
-            "81": self.up_vel,  # Sensor Up Velocity
-            "82": self.north_vel * 1.05,  # Platform North Velocity
-            "83": self.east_vel * 1.05,  # Platform East Velocity
-            "84": self.up_vel * 1.05,  # Platform Up Velocity
-            "85": self.north_vel * 0.9,  # Alternate Platform North Velocity
-            "86": self.east_vel * 0.9,  # Alternate Platform East Velocity
-            "87": self.up_vel * 0.9,  # Alternate Platform Up Velocity
-            "88": self.pitch,  # Platform Pitch Angle Full
-            "89": self.roll,  # Platform Roll Angle Full
-            "90": random.uniform(-45, 45),  # Platform Angle of Attack Full
-            "91": random.uniform(-30, 30),  # Platform Sideslip Angle Full
+            # 81 (Image Horizon Pixel Pack) is a raw Pack payload -- see
+            # the demo local-set injection below, not a numeric field here.
+            "82": self.latitude + 0.01,  # Corner Latitude Point 1 (Full)
+            "83": self.longitude + 0.01,  # Corner Longitude Point 1 (Full)
+            "84": self.latitude + 0.01,  # Corner Latitude Point 2 (Full)
+            "85": self.longitude - 0.01,  # Corner Longitude Point 2 (Full)
+            "86": self.latitude - 0.01,  # Corner Latitude Point 3 (Full)
+            "87": self.longitude - 0.01,  # Corner Longitude Point 3 (Full)
+            "88": self.latitude - 0.01,  # Corner Latitude Point 4 (Full)
+            "89": self.longitude + 0.01,  # Corner Longitude Point 4 (Full)
+            "90": self.pitch,  # Platform Pitch Angle (Full)
+            "91": self.roll,  # Platform Roll Angle (Full)
+            "92": random.uniform(-45, 45),  # Platform Angle of Attack (Full)
+            "93": random.uniform(-30, 30),  # Platform Sideslip Angle (Full)
+            # 94 (MIIS Core Identifier) and 95 (SAR Motion Imagery Metadata)
+            # are raw binary/nested-set payloads -- see the demo local-set
+            # injection below, not numeric fields here.
         }
         return tags
 
@@ -398,7 +404,7 @@ def run_sender(
         payload = tlv(1, b"\x00")
         b64 = base64.b64encode(payload).decode("ascii")
         demo = {}
-        for tid in (48, 66, 73, 74, 92, 93):
+        for tid in (48, 66, 73, 74, 81, 94, 95):
             demo[tid] = f"base64:{b64}"
         return demo
 
@@ -572,7 +578,7 @@ def main():
     parser.add_argument(
         "--local-set-demo",
         action="store_true",
-        help="Attach minimal demo local sets for tags 48/66/73/74/92/93",
+        help="Attach minimal demo local sets for tags 48/66/73/74/81/94/95",
     )
     parser.add_argument(
         "--metadata-app-format",

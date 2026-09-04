@@ -151,7 +151,7 @@ expected total becomes nine suites.
 | Area | How to validate |
 |---|---|
 | End-to-end SRT/UDP network behaviour | Run the example sender/receiver workflows in `doc/srt_pipelines.md` and `doc/udp_pipelines.md` |
-| Full 93-tag end-to-end exercise | `python3 examples/test_93_tags.py` |
+| Full tags 1-95 end-to-end exercise | `python3 examples/test_95_tags.py` |
 | PMT signaling in captured transport streams | `python3 tools/verify_ts_klv.py capture.ts --list-all` |
 | Long-running playback or GUI timing | Manual example workflows and recorded `.ts` reader examples |
 | SRT end-to-end transport | Manual workflows in `doc/srt_pipelines.md` |
@@ -208,8 +208,8 @@ GST_PLUGIN_PATH=build/src gst-inspect-1.0 tspmtrewrite
 # 3. Run the canonical test suite
 meson test -C build --print-errorlogs
 
-# 4. Exercise the full 93-tag path
-GST_PLUGIN_PATH=build/src python3 examples/test_93_tags.py
+# 4. Exercise the full ST 0601.8 tags 1-95 path
+GST_PLUGIN_PATH=build/src python3 examples/test_95_tags.py
 
 # 5. Verify a captured transport stream
 python3 tools/verify_ts_klv.py capture.ts --list-all

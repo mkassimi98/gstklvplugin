@@ -1,5 +1,5 @@
 /**
- * @file examples/ts/cpp/ts_video_reader_93tags.cpp
+ * @file examples/ts/cpp/ts_video_reader_95tags.cpp
  * @brief C++ MPEG-TS reader that decodes MISB ST 0601.8 KLV tags.
  *
  * @ingroup gstklv_examples_cpp

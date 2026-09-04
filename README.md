@@ -12,7 +12,7 @@
 [![Project Status](https://img.shields.io/badge/status-stable-brightgreen)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 
-A GStreamer 1.x plugin suite for end-to-end KLV metadata workflows. Implements **SMPTE ST 336** (KLV encoding), **MISB ST 0601.8** (UAS Datalink Local Set, 93 tags), **STANAG 4609** transport conventions, and **MISB ST 1402** MPEG-TS metadata signaling. Written in C11 for compatibility with the GStreamer plugin ecosystem.
+A GStreamer 1.x plugin suite for end-to-end KLV metadata workflows. Implements **SMPTE ST 336** (KLV encoding), **MISB ST 0601.8** (UAS Datalink Local Set, tags 1-95), **STANAG 4609** transport conventions, and **MISB ST 1402** MPEG-TS metadata signaling. Written in C11 for compatibility with the GStreamer plugin ecosystem.
 
 ---
 
@@ -42,7 +42,7 @@ A GStreamer 1.x plugin suite for end-to-end KLV metadata workflows. Implements *
 | Standard | Scope |
 |---|---|
 | SMPTE ST 336 | KLV Key-Length-Value encoding (BER lengths, UL keys) |
-| MISB ST 0601.8 | UAS Datalink Local Set — 93 tags, BCC-16 checksum |
+| MISB ST 0601.8 | UAS Datalink Local Set — tags 1-95, BCC-16 checksum |
 | STANAG 4609 | MPEG-TS motion imagery and metadata transport |
 | MISB ST 1402 | PMT metadata signaling (`metadata_descriptor 0x26`; current implementation uses `0x06 + KLVA` for GStreamer compatibility) |
 
@@ -58,7 +58,7 @@ cd gstklvplugin
 If you want a specific released state instead of the current default branch:
 
 ```bash
-git clone --branch v1.0.1 --single-branch \
+git clone --branch v1.0.2 --single-branch \
   https://github.com/mkassimi98/gstklvplugin.git
 cd gstklvplugin
 ```
@@ -213,11 +213,11 @@ development and deployment patterns, see [doc/docker.md](doc/docker.md).
 
 ### Local roundtrip (no network)
 
-Validate all 93 MISB ST 0601.8 tags locally:
+Validate all 95 MISB ST 0601.8 tags locally:
 
 ```bash
 export GST_PLUGIN_PATH="$PWD/build/src:$GST_PLUGIN_PATH"
-python3 examples/test_93_tags.py
+python3 examples/test_95_tags.py
 ```
 
 ### SRT streaming (Python)
@@ -225,14 +225,14 @@ python3 examples/test_93_tags.py
 Start the receiver first:
 
 ```bash
-python3 examples/srt-pipelines/python/srt_receiver_93tags.py \
+python3 examples/srt-pipelines/python/srt_receiver_95tags.py \
   --host 127.0.0.1 --port 5000
 ```
 
 Then start the sender:
 
 ```bash
-python3 examples/srt-pipelines/python/srt_sender_93tags.py \
+python3 examples/srt-pipelines/python/srt_sender_95tags.py \
   --host 0.0.0.0 --port 5000 --count 50
 ```
 
@@ -247,14 +247,14 @@ Transport notes:
 Start the receiver first:
 
 ```bash
-python3 examples/udp-pipelines/python/udp_receiver_93tags.py \
+python3 examples/udp-pipelines/python/udp_receiver_95tags.py \
   --host 0.0.0.0 --port 5000
 ```
 
 Then start the sender:
 
 ```bash
-python3 examples/udp-pipelines/python/udp_sender_93tags.py \
+python3 examples/udp-pipelines/python/udp_sender_95tags.py \
   --host 127.0.0.1 --port 5000 --count 50
 ```
 
@@ -454,7 +454,7 @@ Tag registry locations:
 | [doc/design_decisions.md](doc/design_decisions.md) | Rationale behind key design choices |
 | [doc/compliance_appendix.md](doc/compliance_appendix.md) | PMT descriptor bytes and verification steps |
 | [doc/examples.md](doc/examples.md) | Example workflows (Python and C++) |
-| [doc/93_tags.md](doc/93_tags.md) | Full 93-tag ST 0601.8 workflow |
+| [doc/95_tags.md](doc/95_tags.md) | Full ST 0601.8 tags 1-95 workflow |
 | [doc/srt_pipelines.md](doc/srt_pipelines.md) | SRT pipeline composition and options |
 | [doc/tests.md](doc/tests.md) | Test suite documentation |
 | [doc/doxygen_main.md](doc/doxygen_main.md) | Doxygen API reference entry point |

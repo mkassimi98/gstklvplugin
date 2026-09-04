@@ -410,7 +410,7 @@ docker run --rm -it \
   bash -lc '
     if [ ! -d build ]; then meson setup build; fi &&
     meson compile -C build &&
-    python3 examples/srt-pipelines/python/srt_receiver_93tags.py \
+    python3 examples/srt-pipelines/python/srt_receiver_95tags.py \
       --host 127.0.0.1 --port 5000 --headless --print-summary
   '
 ```
@@ -428,7 +428,7 @@ docker run --rm -it \
   bash -lc '
     if [ ! -d build ]; then meson setup build; fi &&
     meson compile -C build &&
-    python3 examples/udp-pipelines/python/udp_receiver_93tags.py \
+    python3 examples/udp-pipelines/python/udp_receiver_95tags.py \
       --host 0.0.0.0 --port 5000 --headless --print-summary
   '
 ```

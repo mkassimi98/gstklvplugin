@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-@file examples/test_93_tags.py
-@brief Python end-to-end exercise for all 93 MISB ST 0601.8 tags.
+@file examples/test_95_tags.py
+@brief Python end-to-end exercise for all 95 MISB ST 0601.8 tags.
 @ingroup gstklv_examples_python
 
 This example generates representative values for the full MISB ST 0601.8 tag
@@ -57,9 +57,11 @@ def extract_tag_definitions():
 def generate_test_json():
     """Generate test values for all tags"""
     json_data = {}
-    byte_tags = {48, 66, 73, 74, 92, 93}
-    
-    for tag_id in range(1, 94):
+    # Tags handled as opaque/raw byte payloads (nested sets, packs, and
+    # binary values not semantically decoded by gstklvplugin).
+    byte_tags = {48, 66, 73, 74, 81, 94, 95}
+
+    for tag_id in range(1, 96):
         if tag_id in byte_tags:
             json_data[str(tag_id)] = "hex:00"
             continue
@@ -67,7 +69,7 @@ def generate_test_json():
             json_data[str(tag_id)] = 0
         elif tag_id == 2:
             json_data[str(tag_id)] = 1234567890
-        elif tag_id in [3, 4, 10, 11, 59, 63, 70]:  # STRING tags
+        elif tag_id in [3, 4, 10, 11, 12, 59, 63, 70]:  # STRING tags
             json_data[str(tag_id)] = f"TEST-{tag_id}"
         elif tag_id == 5:
             json_data[str(tag_id)] = 90.0
@@ -77,7 +79,7 @@ def generate_test_json():
             json_data[str(tag_id)] = 10.0
         elif tag_id in [8, 9]:
             json_data[str(tag_id)] = 50
-        elif tag_id in [12, 13]:
+        elif tag_id == 13:
             json_data[str(tag_id)] = 40.0
         elif tag_id in [14, 15]:
             json_data[str(tag_id)] = 45.5
@@ -85,11 +87,11 @@ def generate_test_json():
             json_data[str(tag_id)] = 1500
         elif tag_id in range(16, 57):
             json_data[str(tag_id)] = 50.0 + (tag_id % 10)
-        elif tag_id in range(57, 94):
+        elif tag_id in range(57, 96):
             json_data[str(tag_id)] = 100 + tag_id
         else:
             json_data[str(tag_id)] = 0
-    
+
     return json_data
 
 def run_gst_test(json_str):
@@ -113,7 +115,7 @@ def run_gst_test(json_str):
         '!', 'queue',
         '!', 'klvmetadec',
         '!', 'filesink',
-        'location=/tmp/final_93_tags.json'
+        'location=/tmp/final_95_tags.json'
     ]
     
     result = subprocess.run(cmd, env=env, capture_output=True, text=True)
@@ -122,7 +124,7 @@ def run_gst_test(json_str):
 def parse_output():
     """Parse decoded JSON output"""
     try:
-        with open('/tmp/final_93_tags.json', 'r') as f:
+        with open('/tmp/final_95_tags.json', 'r') as f:
             content = f.read()
             bracket_count = 0
             end_idx = 0
@@ -181,12 +183,12 @@ def main():
     print("="*100 + "\n")
     
     # Create comprehensive table
-    all_numeric = set(range(1, 94))
+    all_numeric = set(range(1, 96))
     
     print(f"{'TAG':>4} | {'STATUS':>12} | {'NAME':<35} | {'TYPE':<15} | {'VALUE':<20}\n")
     print("-" * 110)
     
-    for tag_id in range(1, 94):
+    for tag_id in range(1, 96):
         tag_def = tag_defs.get(tag_id, {})
         tag_name = tag_def.get('name', 'Unknown')[:33]
         tag_type = tag_def.get('type', 'unknown')[:13]
@@ -212,7 +214,7 @@ def main():
     print("\n" + "="*100)
     print("SUMMARY")
     print("="*100)
-    print(f"OK Total tags: 93")
+    print(f"OK Total tags: 95")
     print(f"OK Tags sent: {len(test_json)}")
     print(f"OK Tags decoded: {len(encoded_tags)}")
     print(f"OK Tags with decoded values: {len(encoded_tags)}")

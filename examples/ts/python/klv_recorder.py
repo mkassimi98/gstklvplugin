@@ -161,7 +161,7 @@ class TagValueGenerator:
             "9": self.airspeed * 0.95,
             "10": "DEMO-SENSOR",
             "11": "FLIR-TYPE-A",
-            "12": random.randint(0, 255),
+            "12": "Geodetic WGS84",
             "13": self.latitude,
             "14": self.longitude,
             "15": self.altitude,
@@ -226,17 +226,23 @@ class TagValueGenerator:
             "78": self.altitude,
             "79": self.north_vel,
             "80": self.east_vel,
-            "81": self.up_vel,
-            "82": self.north_vel * 1.05,
-            "83": self.east_vel * 1.05,
-            "84": self.up_vel * 1.05,
-            "85": self.north_vel * 0.9,
-            "86": self.east_vel * 0.9,
-            "87": self.up_vel * 0.9,
-            "88": self.pitch,
-            "89": self.roll,
-            "90": random.uniform(-45, 45),
-            "91": random.uniform(-30, 30),
+            # 81 (Image Horizon Pixel Pack) is a raw Pack payload -- see
+            # the local-set injection below, not a numeric field here.
+            "82": self.latitude + 0.01,
+            "83": self.longitude + 0.01,
+            "84": self.latitude + 0.01,
+            "85": self.longitude - 0.01,
+            "86": self.latitude - 0.01,
+            "87": self.longitude - 0.01,
+            "88": self.latitude - 0.01,
+            "89": self.longitude + 0.01,
+            "90": self.pitch,
+            "91": self.roll,
+            "92": random.uniform(-45, 45),
+            "93": random.uniform(-30, 30),
+            # 94 (MIIS Core Identifier) and 95 (SAR Motion Imagery Metadata)
+            # are raw binary/nested-set payloads -- see the local-set
+            # injection below, not numeric fields here.
         }
 
 
@@ -379,7 +385,7 @@ def run_recorder(
         payload = tlv(1, b"\x00")
         b64 = base64.b64encode(payload).decode("ascii")
         demo = {}
-        for tid in (48, 66, 73, 74, 92, 93):
+        for tid in (48, 66, 73, 74, 81, 94, 95):
             demo[tid] = f"base64:{b64}"
         return demo
 

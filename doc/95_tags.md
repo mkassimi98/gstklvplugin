@@ -1,13 +1,15 @@
-# MISB ST 0601.8 — Full 93-Tag Workflow
+# MISB ST 0601.8 — Full Tags 1-95 Workflow
 
-Documents the complete 93-tag MISB ST 0601.8 (UAS Datalink Local Set) workflow, including tag generation, local set handling, network streaming, and PMT verification.
+Documents the complete MISB ST 0601.8 (UAS Datalink Local Set, tags 1-95) workflow, including tag generation, local set handling, network streaming, and PMT verification.
+
+See [doc/klv_tags.md](klv_tags.md) for the full corrected tag registry table.
 
 ---
 
 ## What Is Covered
 
-- Local end-to-end validation (`examples/test_93_tags.py`)
-- SRT and UDP sender/receiver workflows exercising all 93 tags
+- Local end-to-end validation (`examples/test_95_tags.py`)
+- SRT and UDP sender/receiver workflows exercising all 95 tags
 - Local set tags as raw byte payloads
 - MPEG-TS PMT metadata signaling via `tspmtrewrite`
 
@@ -15,7 +17,7 @@ Documents the complete 93-tag MISB ST 0601.8 (UAS Datalink Local Set) workflow, 
 
 ## Tag Coverage
 
-The example suite exercises all 93 tags defined in MISB ST 0601.8. Tag values are generated using types and ranges from `data/stanag4609_tags.ini`:
+The example suite exercises all 95 tags defined in MISB ST 0601.8. Tag values are generated using types and ranges from `data/stanag4609_tags.ini`:
 
 | Tag type | Generation strategy |
 |---|---|
@@ -46,29 +48,29 @@ export GST_PLUGIN_PATH="$PWD/build/src:$GST_PLUGIN_PATH"
 
 ## Local Validation (No Network)
 
-Validate the full JSON → KLV → JSON roundtrip for all 93 tags without any network:
+Validate the full JSON → KLV → JSON roundtrip for all 95 tags without any network:
 
 ```bash
-python3 examples/test_93_tags.py
+python3 examples/test_95_tags.py
 ```
 
 This encodes a complete tag set using `klvmetaenc`, decodes it with `klvmetadec`, and verifies that all tags survive the roundtrip with correct values (within quantization tolerance for scaled tags).
 
 ---
 
-## SRT Streaming — All 93 Tags
+## SRT Streaming — All 95 Tags
 
 ### Step 1 — Start the receiver
 
 ```bash
-python3 examples/srt-pipelines/python/srt_receiver_93tags.py \
+python3 examples/srt-pipelines/python/srt_receiver_95tags.py \
   --host 127.0.0.1 --port 5000
 ```
 
 ### Step 2 — Start the sender
 
 ```bash
-python3 examples/srt-pipelines/python/srt_sender_93tags.py \
+python3 examples/srt-pipelines/python/srt_sender_95tags.py \
   --host 0.0.0.0 --port 5000 --count 50
 ```
 
@@ -95,13 +97,14 @@ Several ST 0601.8 tags represent nested local sets. These must be supplied as ra
 | 66 | Target Location Covariance Matrix |
 | 73 | RVT Local Data Set |
 | 74 | VMTI Local Data Set |
-| 92 | MIIS Core Identifier |
-| 93 | SAR Motion Imagery Local Set |
+| 81 | Image Horizon Pixel Pack (Floating Length Pack, not semantically decoded) |
+| 94 | MIIS Core Identifier (ST 1204 Binary Value, not semantically decoded) |
+| 95 | SAR Motion Imagery Metadata (nested ST 1206 Local Set, not semantically decoded) |
 
 ### Supply a specific local set tag
 
 ```bash
-python3 examples/srt-pipelines/python/srt_sender_93tags.py \
+python3 examples/srt-pipelines/python/srt_sender_95tags.py \
   --host 0.0.0.0 --port 5000 \
   --local-set 48=hex:01020304 \
   --local-set 73=hex:AABBCCDD
@@ -116,7 +119,7 @@ python3 examples/srt-pipelines/python/srt_sender_93tags.py \
 ### Use demo payloads for all local set tags
 
 ```bash
-python3 examples/srt-pipelines/python/srt_sender_93tags.py \
+python3 examples/srt-pipelines/python/srt_sender_95tags.py \
   --host 0.0.0.0 --port 5000 \
   --local-set-demo
 ```
@@ -136,7 +139,7 @@ The sender includes `tspmtrewrite` in its pipeline. In the current implementatio
 ### Override descriptor fields
 
 ```bash
-python3 examples/srt-pipelines/python/srt_sender_93tags.py \
+python3 examples/srt-pipelines/python/srt_sender_95tags.py \
   --host 0.0.0.0 --port 5000 \
   --metadata-app-format 0xFFFF \
   --metadata-app-identifier MISB \
@@ -164,12 +167,12 @@ For expected byte values, see [doc/compliance_appendix.md](compliance_appendix.m
 
 | Check | Expected result |
 |---|---|
-| Sender prints per-frame tag list | 93 tags per frame with values |
-| Receiver prints per-frame tag list | 93 decoded tags with names and units |
+| Sender prints per-frame tag list | 95 tags per frame with values |
+| Receiver prints per-frame tag list | 95 decoded tags with names and units |
 | Tag names match INI registry | Names from `data/stanag4609_tags.ini` |
 | PMT `stream_type` | `0x06` in the current repo |
 | `metadata_descriptor` | Present with MISB/KLVA identifiers |
-| Roundtrip validation | `examples/test_93_tags.py` passes |
+| Roundtrip validation | `examples/test_95_tags.py` passes |
 
 ---
 
