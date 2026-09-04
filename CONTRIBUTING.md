@@ -190,6 +190,9 @@ doxygen Doxyfile
    - The test commands you ran and their output (or a note if untestable locally).
    - Any known limitations or follow-up work.
 
+Maintainers should follow [doc/releasing.md](doc/releasing.md) for release
+branches, version updates, tags, packages, and GitHub Releases.
+
 ---
 
 ## Environment Variables
@@ -205,6 +208,6 @@ doxygen Doxyfile
 
 ## License
 
-By contributing, you agree that your contributions are licensed under the **MIT License**.
+By contributing, you agree that your contributions are licensed under the **GNU AGPL-3.0 License**.
 
 See [LICENSE](LICENSE) for the full license text.

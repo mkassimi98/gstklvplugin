@@ -14,7 +14,7 @@
 #endif
 
 #ifndef PACKAGE_VERSION
-#define PACKAGE_VERSION "1.0.0"
+#define PACKAGE_VERSION "1.0.1"
 #endif
 
 #include "gstklv/klvencode.h"
@@ -46,6 +46,6 @@ GST_PLUGIN_DEFINE(GST_VERSION_MAJOR,
                   "KLV Plugin for SMPTE ST 336 and MISB ST 0601 Metadata",
                   plugin_init,
                   PACKAGE_VERSION,
-                  "MIT",
+                  "AGPL-3.0",
                   "gstklvplugin",
                   "https://github.com/mkassimi98/gstklvplugin")

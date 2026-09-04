@@ -10,7 +10,7 @@
 [![Build](https://img.shields.io/badge/build-meson%20%7C%20cmake-lightgrey)](meson.build)
 [![Tests](https://img.shields.io/badge/tests-gst--check-green)](tests/)
 [![Project Status](https://img.shields.io/badge/status-stable-brightgreen)](CHANGELOG.md)
-[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 
 A GStreamer 1.x plugin suite for end-to-end KLV metadata workflows. Implements **SMPTE ST 336** (KLV encoding), **MISB ST 0601.8** (UAS Datalink Local Set, 93 tags), **STANAG 4609** transport conventions, and **MISB ST 1402** MPEG-TS metadata signaling. Written in C11 for compatibility with the GStreamer plugin ecosystem.
 
@@ -58,7 +58,7 @@ cd gstklvplugin
 If you want a specific released state instead of the current default branch:
 
 ```bash
-git clone --branch v1.0.0 --single-branch \
+git clone --branch v1.0.1 --single-branch \
   https://github.com/mkassimi98/gstklvplugin.git
 cd gstklvplugin
 ```
@@ -447,6 +447,7 @@ Tag registry locations:
 | [doc/installation.md](doc/installation.md) | Manual and automatic build/install workflows, discovery, and blacklist recovery |
 | [doc/docker.md](doc/docker.md) | Docker integration guide for development, runtime images, networking, and troubleshooting |
 | [doc/packaging.md](doc/packaging.md) | Debian/Raspberry Pi packaging and distribution workflow |
+| [doc/releasing.md](doc/releasing.md) | GitFlow branches, versioning, tagging, and GitHub release workflow |
 | [doc/standards.md](doc/standards.md) | Standards, encoding rules, and compliance scope |
 | [doc/klv_tags.md](doc/klv_tags.md) | Full MISB ST 0601.8 tag registry table |
 | [doc/code_reference.md](doc/code_reference.md) | Module layout, key functions, and data flow |
@@ -472,7 +473,7 @@ Tag registry locations:
 
 | File | Description |
 |---|---|
-| `LICENSE` | MIT |
+| `LICENSE` | GNU AGPL-3.0 |
 | `AUTHORS` | Maintainers and contributors |
 | `CHANGELOG.md` | Release history |
 | `CONTRIBUTING.md` | Contribution guide |

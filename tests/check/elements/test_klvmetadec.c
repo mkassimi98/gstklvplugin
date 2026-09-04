@@ -10,6 +10,7 @@
  *
  * - factory creation and static pads
  * - JSON reconstruction from encoded KLV buffers
+ * - rejection of non-conformant Universal Labels
  * - preservation of `PTS` / `DTS`
  * - recovery of raw byte tags and large integer text
  */
@@ -123,6 +124,45 @@ GST_START_TEST(test_klvmetadec_roundtrip_timestamp)
 GST_END_TEST
 
 /**
+ * @brief Verify that the non-conformant UL emitted by v1.0.0 is rejected.
+ */
+GST_START_TEST(test_klvmetadec_rejects_legacy_invalid_ul)
+{
+  const guint8 legacy_packet[] = {
+    0x06,
+    0x0E,
+    0x2B,
+    0x34,
+    0x02,
+    0x0B,
+    0x01,
+    0x01,
+    0x0E,
+    0x01,
+    0x03,
+    0x01,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+  };
+  GstHarness *dec = gst_harness_new("klvmetadec");
+  fail_unless(dec != NULL);
+  gst_harness_set_src_caps_str(dec, "meta/x-klv, parsed=true");
+
+  GstBuffer *in = gst_buffer_new_allocate(NULL, sizeof(legacy_packet), NULL);
+  fail_unless(gst_buffer_fill(in, 0, legacy_packet, sizeof(legacy_packet)) ==
+              sizeof(legacy_packet));
+
+  GstFlowReturn ret = gst_harness_push(dec, in);
+  fail_unless(ret == GST_FLOW_ERROR, "legacy invalid UL was accepted: %s", gst_flow_get_name(ret));
+
+  gst_harness_teardown(dec);
+}
+GST_END_TEST
+
+/**
  * @brief Verify raw-tag recovery and `PTS` / `DTS` preservation.
  */
 GST_START_TEST(test_klvmetadec_preserves_timestamps_and_raw_bytes)
@@ -194,6 +234,7 @@ klvmetadec_suite(void)
   tcase_add_test(tc, test_klvmetadec_create);
   tcase_add_test(tc, test_klvmetadec_pads);
   tcase_add_test(tc, test_klvmetadec_roundtrip_timestamp);
+  tcase_add_test(tc, test_klvmetadec_rejects_legacy_invalid_ul);
   tcase_add_test(tc, test_klvmetadec_preserves_timestamps_and_raw_bytes);
   suite_add_tcase(s, tc);
   return s;

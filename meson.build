@@ -1,6 +1,6 @@
 project('gstklvplugin', 'c',
-  version : '1.0.0',
-  license : 'MIT',
+  version : '1.0.1',
+  license : 'AGPL-3.0-only',
   meson_version : '>= 0.62',
   default_options : [
     'warning_level=2',
